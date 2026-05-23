@@ -1,6 +1,12 @@
 import React from 'react';
-import { View, Text, Modal, TouchableOpacity, Share, Platform } from 'react-native';
+import { View, Modal, Pressable, Share, Platform, StyleSheet } from 'react-native';
 import { X, Flame, Share2, Award, Zap } from 'lucide-react-native';
+import { useTheme } from '../design-system/theme/ThemeProvider';
+import { Text } from '../design-system/primitives/Text';
+import { GlassCard } from '../design-system/primitives/GlassCard';
+import { Surface } from '../design-system/primitives/Surface';
+import { AnimatedButton } from '../design-system/primitives/AnimatedButton';
+import { Spacer } from '../design-system/primitives/Spacer';
 
 interface ShareCardProps {
   visible: boolean;
@@ -21,6 +27,7 @@ export default function ShareCard({
   levelTitle,
   challengeTitle,
 }: ShareCardProps) {
+  const { colors, isDark } = useTheme();
   
   const handleNativeShare = async () => {
     try {
@@ -36,111 +43,198 @@ export default function ShareCard({
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View className="flex-1 bg-black/95 justify-center items-center px-6 py-10">
+      <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.92)' }]}>
         
         {/* Header Options */}
-        <View className="w-full flex-row justify-between items-center mb-6">
-          <Text className="text-white/60 text-sm font-black tracking-widest uppercase">
-            Story Share Preview
+        <View style={styles.header}>
+          <Text variant="caption" weight="bold" color={colors.textTertiary} style={{ letterSpacing: 1.5 }}>
+            STORY PREVIEW
           </Text>
-          <TouchableOpacity onPress={onClose} className="p-2 bg-white/10 rounded-full">
-            <X color="#fff" size={20} />
-          </TouchableOpacity>
+          <Pressable onPress={onClose} style={[styles.closeBtn, { backgroundColor: colors.surfaceHover }]}>
+            <X color={colors.text} size={18} />
+          </Pressable>
         </View>
 
         {/* 9:16 Story Card Container */}
-        <View className="w-full max-w-[360px] aspect-[9/16] bg-darkCard border-2 border-primaryOrange/30 rounded-3xl p-6 relative overflow-hidden justify-between shadow-2xl shadow-primaryOrange/20">
-          
+        <GlassCard borderRadius="2xl" intensity="high" style={[styles.card, { borderColor: colors.primary }]}>
           {/* Subtle Background Glow Elements */}
-          <View className="absolute -top-10 -right-10 w-40 h-40 bg-primaryOrange/10 rounded-full blur-3xl" />
-          <View className="absolute -bottom-10 -left-10 w-40 h-40 bg-xpPurple/10 rounded-full blur-3xl" />
+          <View style={[styles.glowOrb, { backgroundColor: colors.primary }]} />
+          <View style={[styles.glowOrb2, { backgroundColor: colors.accent }]} />
 
           {/* Card Top: Branding */}
-          <View className="flex-row justify-between items-center">
+          <View style={styles.cardHeader}>
             <View>
-              <Text className="text-white text-2xl font-black tracking-tighter">
+              <Text variant="h2" weight="display" color={colors.text}>
                 DAYZO
               </Text>
-              <Text className="text-primaryOrange text-[10px] font-black uppercase tracking-widest">
-                Win your day.
+              <Text variant="micro" weight="bold" color={colors.primary} style={{ letterSpacing: 1, marginTop: -4 }}>
+                WIN YOUR DAY.
               </Text>
             </View>
-            <View className="bg-white/5 border border-white/10 px-2.5 py-1 rounded-full">
-              <Text className="text-white/70 text-[10px] font-bold">
+            <View style={[styles.userBadge, { backgroundColor: colors.surfaceElevated, borderColor: colors.borderSubtle }]}>
+              <Text variant="micro" weight="bold" color={colors.textSecondary}>
                 @{username}
               </Text>
             </View>
           </View>
 
           {/* Card Center: Streak Flame & Title */}
-          <View className="items-center my-6">
-            <View className="w-24 h-24 bg-primaryOrange/10 border-2 border-primaryOrange rounded-full justify-center items-center mb-4 shadow-lg shadow-primaryOrange/30">
-              <Flame color="#FF4B2B" fill="#FF4B2B" size={48} />
+          <View style={styles.cardCenter}>
+            <View style={[styles.flameWrapper, { backgroundColor: 'rgba(255, 75, 43, 0.15)', borderColor: colors.primary }]}>
+              <Flame color="#FF4B2B" fill="#FF4B2B" size={40} />
             </View>
-            <Text className="text-white/40 text-xs font-black tracking-widest uppercase mb-1">
-              Daily Challenge Completed
+            <Spacer size="sm" />
+            <Text variant="caption" weight="bold" color={colors.textTertiary} style={{ letterSpacing: 1.5 }}>
+              DAILY COMPLETE
             </Text>
-            <Text className="text-white text-3xl font-black text-center tracking-tight px-4 leading-tight">
+            <Spacer size="xs" />
+            <Text variant="h1" weight="bold" color={colors.text} align="center" style={{ paddingHorizontal: 12 }}>
               {challengeTitle}
             </Text>
           </View>
 
           {/* Card Bottom: Metrics */}
-          <View className="bg-white/5 border border-white/10 rounded-2xl p-4 flex-row justify-around">
-            <View className="items-center">
-              <View className="flex-row items-center mb-0.5">
-                <Flame color="#FF4B2B" size={14} className="mr-0.5" />
-                <Text className="text-white text-lg font-black">{streak}</Text>
+          <Surface elevation="raised" borderRadius="xl" bordered style={styles.metricsBox}>
+            <View style={styles.metricCell}>
+              <View style={styles.metricRow}>
+                <Flame color="#FF4B2B" size={14} style={{ marginRight: 2 }} />
+                <Text variant="body" weight="bold" color={colors.text}>{streak}</Text>
               </View>
-              <Text className="text-white/50 text-[10px] font-bold uppercase tracking-wider">
-                Day Streak
-              </Text>
+              <Text variant="micro" weight="bold" color={colors.textTertiary}>STREAK</Text>
             </View>
             
-            <View className="w-[1px] h-8 bg-white/10 align-middle" />
+            <View style={[styles.divider, { backgroundColor: colors.borderSubtle }]} />
 
-            <View className="items-center">
-              <View className="flex-row items-center mb-0.5">
-                <Zap color="#00F2FE" size={14} className="mr-0.5" />
-                <Text className="text-white text-lg font-black">+{xp} XP</Text>
+            <View style={styles.metricCell}>
+              <View style={styles.metricRow}>
+                <Zap color="#00F2FE" size={14} style={{ marginRight: 2 }} />
+                <Text variant="body" weight="bold" color={colors.text}>+{xp}</Text>
               </View>
-              <Text className="text-white/50 text-[10px] font-bold uppercase tracking-wider">
-                Earned
-              </Text>
+              <Text variant="micro" weight="bold" color={colors.textTertiary}>XP EARNED</Text>
             </View>
 
-            <View className="w-[1px] h-8 bg-white/10 align-middle" />
+            <View style={[styles.divider, { backgroundColor: colors.borderSubtle }]} />
 
-            <View className="items-center">
-              <View className="flex-row items-center mb-0.5">
-                <Award color="#8A2387" size={14} className="mr-0.5" />
-                <Text className="text-white text-base font-black">{levelTitle}</Text>
+            <View style={styles.metricCell}>
+              <View style={styles.metricRow}>
+                <Award color="#8A2387" size={14} style={{ marginRight: 2 }} />
+                <Text variant="bodySmall" weight="bold" color={colors.text} numberOfLines={1}>{levelTitle}</Text>
               </View>
-              <Text className="text-white/50 text-[10px] font-bold uppercase tracking-wider">
-                Rank Title
-              </Text>
+              <Text variant="micro" weight="bold" color={colors.textTertiary}>RANK</Text>
             </View>
-          </View>
+          </Surface>
 
           {/* Footer Callout */}
-          <View className="items-center mt-4">
-            <Text className="text-white/30 text-[9px] font-black uppercase tracking-widest text-center">
-              Compete with friends. Save your streak.
-            </Text>
-          </View>
-        </View>
+          <Text variant="micro" weight="bold" color={colors.textTertiary} align="center" style={{ letterSpacing: 0.5 }}>
+            COMPETE WITH FRIENDS. COMPETE WITH SELF.
+          </Text>
+        </GlassCard>
 
         {/* Share Button CTA */}
-        <TouchableOpacity
+        <AnimatedButton
+          title="Share to Instagram Story"
           onPress={handleNativeShare}
-          className="w-full max-w-[360px] bg-primaryOrange py-4 rounded-2xl flex-row justify-center items-center mt-6 active:scale-95 transition-all shadow-xl shadow-primaryOrange/20"
-        >
-          <Share2 color="#fff" size={20} className="mr-2" />
-          <Text className="text-white text-base font-black uppercase tracking-wider">
-            Share to Instagram Story
-          </Text>
-        </TouchableOpacity>
+          style={styles.shareBtn}
+        />
       </View>
     </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 40,
+  },
+  header: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  closeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  card: {
+    width: '100%',
+    maxHeight: 520,
+    aspectRatio: 9 / 16,
+    padding: 24,
+    justifyContent: 'space-between',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  glowOrb: {
+    position: 'absolute',
+    top: -50,
+    right: -50,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    opacity: 0.1,
+  },
+  glowOrb2: {
+    position: 'absolute',
+    bottom: -50,
+    left: -50,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    opacity: 0.08,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  userBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 9999,
+    borderWidth: 1,
+  },
+  cardCenter: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  flameWrapper: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  metricsBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+  },
+  metricCell: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  metricRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  divider: {
+    width: 1,
+    height: 24,
+  },
+  shareBtn: {
+    width: '100%',
+    marginTop: 24,
+  },
+});
+
