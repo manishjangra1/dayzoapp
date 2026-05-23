@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, TextInput, Pressable, ScrollView, RefreshControl, Platform, ActivityIndicator, Alert } from 'react-native';
+import { StyleSheet, View, TextInput, Pressable, ScrollView, RefreshControl, Platform, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Users, Plus, Zap, Heart, MessageSquare, Compass, Search, UserPlus, Send, Smile } from 'lucide-react-native';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
+import { useDialog } from '../../design-system/theme/DialogProvider';
 import { Text } from '../../design-system/primitives/Text';
 import { GlassCard } from '../../design-system/primitives/GlassCard';
 import { Surface } from '../../design-system/primitives/Surface';
@@ -48,6 +49,7 @@ export default function SocialFeedScreen() {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
+  const dialog = useDialog();
 
   // Navigation tabs: 'feed' | 'discover'
   const [activeTab, setActiveTab] = useState<'feed' | 'discover'>('feed');
@@ -97,13 +99,21 @@ export default function SocialFeedScreen() {
       await api.post('/social/request', {
         username: nameToRequest.trim().toLowerCase(),
       });
-      Alert.alert('Request Sent', `Companion request sent to @${nameToRequest}!`);
+      dialog.show({
+        title: 'Request Sent',
+        message: `Companion request sent to @${nameToRequest}!`,
+        primaryAction: { text: 'OK' }
+      });
       if (!targetUsername) {
         setFriendInput('');
       }
       fetchFeed();
     } catch (e: any) {
-      Alert.alert('Request Failed', e.response?.data?.message || 'Failed to send request.');
+      dialog.show({
+        title: 'Request Failed',
+        message: e.response?.data?.message || 'Failed to send request.',
+        primaryAction: { text: 'OK', variant: 'primary' }
+      });
     } finally {
       setActionLoading(false);
     }

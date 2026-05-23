@@ -14,6 +14,7 @@ import {
 } from '@expo-google-fonts/inter';
 import * as SplashScreen from 'expo-splash-screen';
 import { ThemeProvider, useTheme } from '../design-system/theme/ThemeProvider';
+import { DialogProvider } from '../design-system/theme/DialogProvider';
 
 // Prevent splash screen from auto-hiding before asset loading is complete
 SplashScreen.preventAutoHideAsync();
@@ -71,7 +72,9 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <NavigationStack />
+        <DialogProvider>
+          <NavigationStack />
+        </DialogProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

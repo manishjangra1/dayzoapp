@@ -26,7 +26,7 @@ export default function AchievementModal({
       <View className="flex-1 bg-black/90 justify-center items-center px-6">
         
         {/* Glowing Celebration Box */}
-        <View className="w-full max-w-[340px] bg-darkCard border border-white/10 rounded-3xl p-8 items-center relative overflow-hidden shadow-2xl">
+        <View className="w-full max-w-[340px] bg-darkCard border border-white/10 rounded-3xl p-8 items-center relative overflow-hidden">
           
           {/* Glowing Accents */}
           <View className={`absolute -top-10 -left-10 w-32 h-32 rounded-full blur-3xl ${isLevelUp ? 'bg-xpPurple/20' : 'bg-primaryOrange/20'}`} />

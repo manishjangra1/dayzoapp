@@ -1,10 +1,11 @@
 import React from 'react';
-import { StyleSheet, View, ScrollView, Pressable, Platform, Alert } from 'react-native';
+import { StyleSheet, View, ScrollView, Pressable, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LogOut, Award, ShieldAlert, Sparkles, UserCheck, Flame, Zap } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/authStore';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
+import { useDialog } from '../../design-system/theme/DialogProvider';
 import { Text } from '../../design-system/primitives/Text';
 import { GlassCard } from '../../design-system/primitives/GlassCard';
 import { Surface } from '../../design-system/primitives/Surface';
@@ -17,19 +18,25 @@ export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, clearAuth } = useAuthStore();
+  const dialog = useDialog();
 
-  const handleLogout = async () => {
-    Alert.alert('Logout Session', 'Are you sure you want to end your active Dayzo session?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Logout',
-        style: 'destructive',
+  const handleLogout = () => {
+    dialog.show({
+      title: 'Logout Session',
+      message: 'Are you sure you want to end your active Dayzo session?',
+      primaryAction: {
+        text: 'LOGOUT',
+        variant: 'danger',
         onPress: async () => {
           await clearAuth();
           router.replace('/(auth)/login');
         },
       },
-    ]);
+      secondaryAction: {
+        text: 'CANCEL',
+        variant: 'ghost',
+      },
+    });
   };
 
   return (

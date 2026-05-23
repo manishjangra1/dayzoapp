@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, ScrollView, Platform, TextInput, Alert, Clipboard, ActivityIndicator, Pressable, RefreshControl } from 'react-native';
+import { StyleSheet, View, ScrollView, Platform, TextInput, Clipboard, ActivityIndicator, Pressable, RefreshControl } from 'react-native';
 import { Award, ShieldAlert, Sparkles, Users, Lock, ChevronRight, Zap, Copy, LogOut, PlusCircle, UserCheck } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../services/api';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
+import { useDialog } from '../../design-system/theme/DialogProvider';
 import { Text } from '../../design-system/primitives/Text';
 import { GlassCard } from '../../design-system/primitives/GlassCard';
 import { Surface } from '../../design-system/primitives/Surface';
@@ -34,6 +35,7 @@ interface Squad {
 export default function SquadsScreen() {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
+  const dialog = useDialog();
 
   const [mySquad, setMySquad] = useState<Squad | null>(null);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
@@ -75,19 +77,31 @@ export default function SquadsScreen() {
 
   const handleCreateSquad = async () => {
     if (!squadName.trim()) {
-      Alert.alert('Required Name', 'Please enter a name for your new squad.');
+      dialog.show({
+        title: 'Required Name',
+        message: 'Please enter a name for your new squad.',
+        primaryAction: { text: 'OK' }
+      });
       return;
     }
 
     try {
       setCreateLoading(true);
       const res = await api.post('/squads/create', { name: squadName.trim() });
-      Alert.alert('Success', `Squad "${res.data.name}" has been created! Share your invite code to invite teammates.`);
+      dialog.show({
+        title: 'Success',
+        message: `Squad "${res.data.name}" has been created! Share your invite code to invite teammates.`,
+        primaryAction: { text: 'OK' }
+      });
       setMySquad(res.data);
       setSquadName('');
       fetchSquadDetails();
     } catch (e: any) {
-      Alert.alert('Failed to Create', e.response?.data?.message || 'Failed to create squad.');
+      dialog.show({
+        title: 'Failed to Create',
+        message: e.response?.data?.message || 'Failed to create squad.',
+        primaryAction: { text: 'OK', variant: 'primary' }
+      });
     } finally {
       setCreateLoading(false);
     }
@@ -95,19 +109,31 @@ export default function SquadsScreen() {
 
   const handleJoinSquad = async () => {
     if (!joinCode.trim() || joinCode.trim().length < 4) {
-      Alert.alert('Invalid Code', 'Please enter a valid squad invite code.');
+      dialog.show({
+        title: 'Invalid Code',
+        message: 'Please enter a valid squad invite code.',
+        primaryAction: { text: 'OK' }
+      });
       return;
     }
 
     try {
       setJoinLoading(true);
       const res = await api.post('/squads/join', { inviteCode: joinCode.trim().toUpperCase() });
-      Alert.alert('Success', `Successfully joined squad: "${res.data.name}"!`);
+      dialog.show({
+        title: 'Success',
+        message: `Successfully joined squad: "${res.data.name}"!`,
+        primaryAction: { text: 'OK' }
+      });
       setMySquad(res.data);
       setJoinCode('');
       fetchSquadDetails();
     } catch (e: any) {
-      Alert.alert('Failed to Join', e.response?.data?.message || 'Invalid invite code or squad is full.');
+      dialog.show({
+        title: 'Failed to Join',
+        message: e.response?.data?.message || 'Invalid invite code or squad is full.',
+        primaryAction: { text: 'OK', variant: 'primary' }
+      });
     } finally {
       setJoinLoading(false);
     }
@@ -116,32 +142,49 @@ export default function SquadsScreen() {
   const handleLeaveSquad = async () => {
     if (!mySquad) return;
 
-    Alert.alert('Leave Squad', `Are you sure you want to leave "${mySquad.name}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Leave',
-        style: 'destructive',
+    dialog.show({
+      title: 'Leave Squad',
+      message: `Are you sure you want to leave "${mySquad.name}"?`,
+      primaryAction: {
+        text: 'LEAVE',
+        variant: 'danger',
         onPress: async () => {
           try {
             setLeaveLoading(true);
             await api.post('/squads/leave');
-            Alert.alert('Success', 'You have left the squad.');
+            dialog.show({
+              title: 'Success',
+              message: 'You have left the squad.',
+              primaryAction: { text: 'OK' }
+            });
             setMySquad(null);
             fetchSquadDetails();
           } catch (e: any) {
-            Alert.alert('Error', e.response?.data?.message || 'Failed to leave squad.');
+            dialog.show({
+              title: 'Error',
+              message: e.response?.data?.message || 'Failed to leave squad.',
+              primaryAction: { text: 'OK', variant: 'primary' }
+            });
           } finally {
             setLeaveLoading(false);
           }
         },
       },
-    ]);
+      secondaryAction: {
+        text: 'CANCEL',
+        variant: 'ghost',
+      },
+    });
   };
 
   const copyToClipboard = () => {
     if (mySquad?.inviteCode) {
       Clipboard.setString(mySquad.inviteCode);
-      Alert.alert('Copied', 'Invite code copied to clipboard!');
+      dialog.show({
+        title: 'Copied',
+        message: 'Invite code copied to clipboard!',
+        primaryAction: { text: 'OK' }
+      });
     }
   };
 

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, TextInput, Alert, Platform, Pressable } from 'react-native';
+import { StyleSheet, View, TextInput, Platform, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Flame, Mail, Lock, User } from 'lucide-react-native';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
+import { useDialog } from '../../design-system/theme/DialogProvider';
 import { Text } from '../../design-system/primitives/Text';
 import { GlassCard } from '../../design-system/primitives/GlassCard';
 import { AnimatedButton } from '../../design-system/primitives/AnimatedButton';
@@ -16,6 +17,7 @@ export default function RegisterScreen() {
   const { colors, isDark } = useTheme();
   const router = useRouter();
   const { setAuth } = useAuthStore();
+  const dialog = useDialog();
 
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -24,7 +26,11 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!email || !username || !password) {
-      Alert.alert('Required Fields', 'Please enter your email, username, and password.');
+      dialog.show({
+        title: 'Required Fields',
+        message: 'Please enter your email, username, and password.',
+        primaryAction: { text: 'OK' }
+      });
       return;
     }
 
@@ -41,7 +47,11 @@ export default function RegisterScreen() {
       // Since it's a new registration, send them to Onboarding flow!
       router.replace('/(onboarding)/welcome');
     } catch (e: any) {
-      Alert.alert('Registration Failed', e.response?.data?.message || 'Username or email already exists.');
+      dialog.show({
+        title: 'Registration Failed',
+        message: e.response?.data?.message || 'Username or email already exists.',
+        primaryAction: { text: 'OK', variant: 'primary' }
+      });
     } finally {
       setLoading(false);
     }

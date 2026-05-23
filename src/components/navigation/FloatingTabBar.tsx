@@ -13,6 +13,7 @@ import {
   User,
 } from 'lucide-react-native';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { animations } from '../../design-system/tokens/animations';
 import { radius } from '../../design-system/tokens/radius';
 import { GlassCard } from '../../design-system/primitives/GlassCard';
@@ -32,6 +33,7 @@ export const FloatingTabBar: React.FC<FloatingTabBarProps> = ({
   navigation,
 }) => {
   const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   
   // Calculate active sliding pill index
   const tabWidth = TAB_BAR_WIDTH / state.routes.length;
@@ -49,11 +51,11 @@ export const FloatingTabBar: React.FC<FloatingTabBarProps> = ({
 
   const getIcon = (routeName: string, isFocused: boolean) => {
     const size = 22;
-    const color = isFocused ? colors.surface : colors.textSecondary;
+    const color = isFocused ? colors.primary : colors.textSecondary;
 
     switch (routeName) {
       case 'index':
-        return <Flame size={size} color={isFocused ? '#FF4B2B' : colors.textSecondary} fill={isFocused ? '#FF4B2B' : 'transparent'} />;
+        return <Flame size={size} color={color} fill={isFocused ? colors.primary : 'transparent'} />;
       case 'feed':
         return <Users size={size} color={color} />;
       case 'leaderboard':
@@ -68,7 +70,7 @@ export const FloatingTabBar: React.FC<FloatingTabBarProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { bottom: Math.max(insets.bottom, 12) }]}>
       <GlassCard borderRadius="2xl" intensity="high" style={styles.tabBar}>
         {/* Animated active pill background */}
         <Animated.View
@@ -120,7 +122,6 @@ export const FloatingTabBar: React.FC<FloatingTabBarProps> = ({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 34 : 20,
     left: 16,
     right: 16,
     height: 64,

@@ -6,3 +6,4 @@ export * from './Gradient';
 export * from './Spacer';
 export * from './Divider';
 export * from './SkeletonLoader';
+export * from './ModalDialog';

@@ -1,9 +1,11 @@
 import React, { useRef, useState } from 'react';
-import { View, Modal, Pressable, Platform, StyleSheet, Alert } from 'react-native';
+import { View, Modal, Pressable, Platform, StyleSheet } from 'react-native';
 import { X, Flame, Share2, Award, Zap, Camera, Link, MessageCircle } from 'lucide-react-native';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../design-system/theme/ThemeProvider';
+import { useDialog } from '../design-system/theme/DialogProvider';
 import { Text } from '../design-system/primitives/Text';
 import { GlassCard } from '../design-system/primitives/GlassCard';
 import { Surface } from '../design-system/primitives/Surface';
@@ -58,7 +60,9 @@ export default function ShareCard({
   levelTitle,
   challengeTitle,
 }: ShareCardProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
+  const dialog = useDialog();
+  const insets = useSafeAreaInsets();
   const viewShotRef = useRef<View>(null);
 
   // Customizer States
@@ -70,7 +74,11 @@ export default function ShareCard({
   const handleNativeShare = async () => {
     try {
       if (!viewShotRef.current) {
-        Alert.alert('Error', 'Card is still rendering. Please try again.');
+        dialog.show({
+          title: 'Error',
+          message: 'Card is still rendering. Please try again.',
+          primaryAction: { text: 'OK' }
+        });
         return;
       }
 
@@ -88,17 +96,34 @@ export default function ShareCard({
           dialogTitle: 'Share Dayzo Habit Win',
         });
       } else {
-        Alert.alert('Error', 'Sharing is not supported on this device.');
+        dialog.show({
+          title: 'Error',
+          message: 'Sharing is not supported on this device.',
+          primaryAction: { text: 'OK', variant: 'primary' }
+        });
       }
     } catch (error) {
       console.warn('Sharing failed:', error);
-      Alert.alert('Error', 'Failed to generate visual sharing card.');
+      dialog.show({
+        title: 'Error',
+        message: 'Failed to generate visual sharing card.',
+        primaryAction: { text: 'OK', variant: 'primary' }
+      });
     }
   };
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.92)' }]}>
+      <View
+        style={[
+          styles.modalOverlay,
+          {
+            backgroundColor: colors.background,
+            paddingTop: Math.max(insets.top, 16) + 12,
+            paddingBottom: Math.max(insets.bottom, 16) + 12,
+          },
+        ]}
+      >
         
         {/* Header Options */}
         <View style={styles.header}>
@@ -191,7 +216,7 @@ export default function ShareCard({
                   <Flame color={activeTheme.primary} fill={activeTheme.primary} size={14} style={{ marginRight: 2 }} />
                   <Text variant="body" weight="bold" color={colors.text}>{streak}</Text>
                 </View>
-                <Text variant="micro" weight="bold" color={colors.textTertiary}>STREAK</Text>
+                <Text variant="micro" weight="bold" color={colors.textTertiary} align="center">STREAK</Text>
               </View>
               
               <View style={[styles.divider, { backgroundColor: colors.borderSubtle }]} />
@@ -201,7 +226,7 @@ export default function ShareCard({
                   <Zap color="#00F2FE" size={14} style={{ marginRight: 2 }} />
                   <Text variant="body" weight="bold" color={colors.text}>+{xp}</Text>
                 </View>
-                <Text variant="micro" weight="bold" color={colors.textTertiary}>XP EARNED</Text>
+                <Text variant="micro" weight="bold" color={colors.textTertiary} align="center">XP EARNED</Text>
               </View>
 
               <View style={[styles.divider, { backgroundColor: colors.borderSubtle }]} />
@@ -211,7 +236,7 @@ export default function ShareCard({
                   <Award color="#8A2387" size={14} style={{ marginRight: 2 }} />
                   <Text variant="bodySmall" weight="bold" color={colors.text} numberOfLines={1}>{levelTitle}</Text>
                 </View>
-                <Text variant="micro" weight="bold" color={colors.textTertiary}>RANK</Text>
+                <Text variant="micro" weight="bold" color={colors.textTertiary} align="center">RANK</Text>
               </View>
             </Surface>
 
@@ -289,11 +314,16 @@ export default function ShareCard({
 
 const styles = StyleSheet.create({
   modalOverlay: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingVertical: 40,
+    paddingTop: 40,
+    paddingBottom: 40,
   },
   header: {
     width: '100%',
