@@ -288,7 +288,7 @@ export default function HomeScreen() {
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleCol}>
             <Text variant="h2" weight="display" color={colors.text}>
-              Today's Quest
+              Today's Challenge
             </Text>
             <Text variant="micro" weight="bold" color={colors.textSecondary} style={{ letterSpacing: 0.5 }}>
               ROTATES EVERY 24 HOURS
