@@ -68,6 +68,7 @@ export default function ShareCard({
   // Customizer States
   const [themeName, setThemeName] = useState<keyof typeof themeColors>('premium');
   const [layoutType, setLayoutType] = useState<'cinematic' | 'minimalist' | 'flame'>('cinematic');
+  const [cardFormat, setCardFormat] = useState<'story' | 'square'>('story');
 
   const activeTheme = themeColors[themeName];
   
@@ -126,7 +127,17 @@ export default function ShareCard({
       >
         
         {/* Header Options */}
-        <View style={styles.header}>
+        <View
+          style={[
+            styles.header,
+            {
+              position: 'absolute',
+              top: Math.max(insets.top, 16),
+              left: 24,
+              right: 24,
+            },
+          ]}
+        >
           <Text variant="caption" weight="bold" color={colors.textTertiary} style={{ letterSpacing: 1.5 }}>
             CUSTOMIZE & SHARE
           </Text>
@@ -135,9 +146,26 @@ export default function ShareCard({
           </Pressable>
         </View>
 
-        {/* 9:16 Story Card Container (Wrapped in View with transparent borders) */}
-        <View ref={viewShotRef} collapsable={false} style={styles.cardWrapper}>
-          <GlassCard borderRadius="2xl" intensity="high" style={[styles.card, { borderColor: activeTheme.primary }]}>
+        {/* Card Container (Wrapped in View with transparent borders) */}
+        <View
+          ref={viewShotRef}
+          collapsable={false}
+          style={[
+            styles.cardWrapper,
+            { aspectRatio: cardFormat === 'square' ? 1 : 9 / 16 },
+          ]}
+        >
+          <GlassCard
+            borderRadius="2xl"
+            intensity="high"
+            style={[
+              styles.card,
+              {
+                borderColor: activeTheme.primary,
+                padding: cardFormat === 'square' ? 16 : 24,
+              },
+            ]}
+          >
             
             {/* Cinematic background orbs */}
             {layoutType !== 'minimalist' && (
@@ -167,8 +195,21 @@ export default function ShareCard({
             {/* Card Center Layout Switching */}
             {layoutType === 'cinematic' && (
               <View style={styles.cardCenter}>
-                <View style={[styles.flameWrapper, { backgroundColor: activeTheme.glow, borderColor: activeTheme.primary }]}>
-                  <Flame color={activeTheme.primary} fill={activeTheme.primary} size={40} />
+                <View
+                  style={[
+                    styles.flameWrapper,
+                    {
+                      backgroundColor: activeTheme.glow,
+                      borderColor: activeTheme.primary,
+                      ...(cardFormat === 'square' && {
+                        width: 56,
+                        height: 56,
+                        borderRadius: 28,
+                      }),
+                    },
+                  ]}
+                >
+                  <Flame color={activeTheme.primary} fill={activeTheme.primary} size={cardFormat === 'square' ? 30 : 40} />
                 </View>
                 <Spacer size="sm" />
                 <Text variant="caption" weight="bold" color={colors.textTertiary} style={{ letterSpacing: 1.5 }}>
@@ -187,7 +228,16 @@ export default function ShareCard({
                   HABIT COMPLETE
                 </Text>
                 <Spacer size="sm" />
-                <Text variant="hero" weight="display" color={colors.text} align="center" style={styles.cleanTitle}>
+                <Text
+                  variant="hero"
+                  weight="display"
+                  color={colors.text}
+                  align="center"
+                  style={[
+                    styles.cleanTitle,
+                    cardFormat === 'square' && { fontSize: 20, lineHeight: 26 },
+                  ]}
+                >
                   {challengeTitle}
                 </Text>
                 <Spacer size="sm" />
@@ -196,10 +246,23 @@ export default function ShareCard({
 
             {layoutType === 'flame' && (
               <View style={styles.cardCenter}>
-                <View style={[styles.flameWrapperLarge, { backgroundColor: activeTheme.glow, borderColor: activeTheme.primary }]}>
-                  <Flame color={activeTheme.primary} fill={activeTheme.primary} size={60} />
+                <View
+                  style={[
+                    styles.flameWrapperLarge,
+                    {
+                      backgroundColor: activeTheme.glow,
+                      borderColor: activeTheme.primary,
+                      ...(cardFormat === 'square' && {
+                        width: 80,
+                        height: 80,
+                        borderRadius: 40,
+                      }),
+                    },
+                  ]}
+                >
+                  <Flame color={activeTheme.primary} fill={activeTheme.primary} size={cardFormat === 'square' ? 44 : 60} />
                 </View>
-                <Spacer size="md" />
+                <Spacer size={cardFormat === 'square' ? 'sm' : 'md'} />
                 <Text variant="hero" weight="display" color={colors.text} align="center">
                   {streak} DAYS
                 </Text>
@@ -212,9 +275,9 @@ export default function ShareCard({
             {/* Card Bottom: Metrics */}
             <Surface elevation="raised" borderRadius="xl" bordered style={styles.metricsBox}>
               <View style={styles.metricCell}>
-                <View style={styles.metricRow}>
+                <View style={[styles.metricRow, { justifyContent: 'center' }]}>
                   <Flame color={activeTheme.primary} fill={activeTheme.primary} size={14} style={{ marginRight: 2 }} />
-                  <Text variant="body" weight="bold" color={colors.text}>{streak}</Text>
+                  <Text variant="bodySmall" weight="bold" color={colors.text}>{streak}</Text>
                 </View>
                 <Text variant="micro" weight="bold" color={colors.textTertiary} align="center">STREAK</Text>
               </View>
@@ -222,17 +285,17 @@ export default function ShareCard({
               <View style={[styles.divider, { backgroundColor: colors.borderSubtle }]} />
 
               <View style={styles.metricCell}>
-                <View style={styles.metricRow}>
+                <View style={[styles.metricRow, { justifyContent: 'center' }]}>
                   <Zap color="#00F2FE" size={14} style={{ marginRight: 2 }} />
-                  <Text variant="body" weight="bold" color={colors.text}>+{xp}</Text>
+                  <Text variant="bodySmall" weight="bold" color={colors.text}>+{xp}</Text>
                 </View>
-                <Text variant="micro" weight="bold" color={colors.textTertiary} align="center">XP EARNED</Text>
+                <Text variant="micro" weight="bold" color={colors.textTertiary} align="center">XP</Text>
               </View>
 
               <View style={[styles.divider, { backgroundColor: colors.borderSubtle }]} />
 
               <View style={styles.metricCell}>
-                <View style={styles.metricRow}>
+                <View style={[styles.metricRow, { justifyContent: 'center' }]}>
                   <Award color="#8A2387" size={14} style={{ marginRight: 2 }} />
                   <Text variant="bodySmall" weight="bold" color={colors.text} numberOfLines={1}>{levelTitle}</Text>
                 </View>
@@ -297,6 +360,30 @@ export default function ShareCard({
               ))}
             </View>
           </View>
+
+          {/* Format selector */}
+          <View style={styles.controlRow}>
+            <Text variant="micro" weight="bold" color={colors.textSecondary} style={{ width: 60 }}>
+              FORMAT
+            </Text>
+            <View style={styles.pillRow}>
+              {(['story', 'square'] as const).map((format) => (
+                <Pressable
+                  key={format}
+                  onPress={() => setCardFormat(format)}
+                  style={[
+                    styles.pillBtn,
+                    { backgroundColor: colors.surfaceElevated, borderColor: colors.borderSubtle },
+                    cardFormat === format && { backgroundColor: colors.primary, borderColor: colors.primary },
+                  ]}
+                >
+                  <Text variant="micro" weight="bold" color={cardFormat === format ? colors.surface : colors.text}>
+                    {format === 'story' ? 'STORY (9:16)' : 'SQUARE (1:1)'}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
         </Surface>
 
         <Spacer size="lg" />
@@ -319,7 +406,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingTop: 40,
@@ -415,12 +502,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 8,
   },
   metricCell: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   metricRow: {
     flexDirection: 'row',
