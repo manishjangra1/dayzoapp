@@ -10,6 +10,7 @@ import { Sparkles } from 'lucide-react-native';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { Text } from '../../../design-system/primitives/Text';
 import { GlassCard } from '../../../design-system/primitives/GlassCard';
+import { typography } from '../../../design-system/tokens/typography';
 
 const MOTIVATIONS = [
   "Small daily disciplines compound into massive lifetime transformations.",
@@ -18,8 +19,6 @@ const MOTIVATIONS = [
   "Pain of discipline is temporary; regret of quitting is permanent.",
   "You don't rise to the level of your goals, you sink to the level of your systems.",
 ];
-
-const AnimatedText = Animated.createAnimatedComponent(Text);
 
 export const MotivationBanner: React.FC = () => {
   const { colors } = useTheme();
@@ -53,14 +52,20 @@ export const MotivationBanner: React.FC = () => {
     <GlassCard borderRadius="xl" intensity="low" style={styles.container}>
       <Sparkles size={16} color={colors.primary} style={styles.icon} />
       <View style={styles.textWrapper}>
-        <AnimatedText
-          variant="bodySmall"
-          weight="medium"
-          color={colors.textSecondary}
-          style={[styles.quoteText, animatedStyle]}
+        <Animated.Text
+          style={[
+            styles.quoteText,
+            {
+              fontFamily: typography.fonts.medium,
+              fontSize: typography.sizes.bodySmall,
+              lineHeight: typography.lineHeights.bodySmall,
+              color: colors.textSecondary,
+            },
+            animatedStyle,
+          ]}
         >
           "{MOTIVATIONS[index]}"
-        </AnimatedText>
+        </Animated.Text>
       </View>
     </GlassCard>
   );

@@ -62,9 +62,6 @@ export const GlassCard: React.FC<GlassCardProps> = ({
             shadowOpacity: 0.15,
             shadowRadius: 10,
           },
-          android: {
-            elevation: 4,
-          },
         }),
         style,
       ]}
