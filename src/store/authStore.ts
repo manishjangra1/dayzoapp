@@ -7,6 +7,7 @@ export interface User {
   email: string;
   username: string;
   avatar?: string;
+  bio?: string;
   xp: number;
   level: number;
   streak: number;

@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, ScrollView, RefreshControl, Platform } from 'react-native';
+import { StyleSheet, View, ScrollView, RefreshControl, Platform, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
+import { useDialog } from '../../design-system/theme/DialogProvider';
 import { Text } from '../../design-system/primitives/Text';
 import { Surface } from '../../design-system/primitives/Surface';
 import { Spacer } from '../../design-system/primitives/Spacer';
@@ -15,6 +16,7 @@ import { MotivationBanner } from '../../features/home/components/MotivationBanne
 import { ChallengeCard } from '../../features/home/components/ChallengeCard';
 import { UserAvatar } from '../../components/common/UserAvatar';
 import ShareCard from '../../components/ShareCard';
+import { radius } from '../../design-system/tokens/radius';
 
 const generateCurrentWeekDays = (historyData?: any[]) => {
   const today = new Date();
@@ -97,13 +99,17 @@ export default function HomeScreen() {
     fetchHomeData();
   };
 
+  const dialog = useDialog();
   const [shareVisible, setShareVisible] = useState(false);
+  const [proofText, setProofText] = useState('');
 
-  const handleCompleteChallenge = async () => {
+  const handleCompleteChallenge = async (submittedProof: string) => {
     if (!todayChallenge) return;
     try {
       setActionLoading(true);
-      await api.post('/challenges/complete');
+      await api.post('/challenges/complete', {
+        proofText: submittedProof.trim() || undefined
+      });
       setCompletedToday(true);
       setWeeklyConsistency((prev) =>
         prev.map((d) => (d.isToday ? { ...d, completed: true } : d))
@@ -117,9 +123,56 @@ export default function HomeScreen() {
       setShareVisible(true);
     } catch (e) {
       console.warn('Failed to complete challenge:', e);
+      dialog.show({
+        title: 'Error',
+        message: 'Failed to record completion. Please try again.',
+        primaryAction: { text: 'OK' }
+      });
     } finally {
       setActionLoading(false);
+      setProofText('');
     }
+  };
+
+  const triggerCompleteChallengeWithProof = () => {
+    let localProof = '';
+    dialog.show({
+      title: 'Challenge Verification',
+      message: (
+        <View style={{ width: '100%', paddingVertical: 8 }}>
+          <Text variant="bodySmall" color={colors.textSecondary} style={{ marginBottom: 8 }}>
+            Type a quick note of verification (e.g. "Did 20 pushups in my bedroom!")
+          </Text>
+          <TextInput
+            placeholder="Type completion log..."
+            placeholderTextColor={colors.textTertiary}
+            onChangeText={(txt) => { localProof = txt; }}
+            style={{
+              width: '100%',
+              backgroundColor: colors.surfaceElevated,
+              borderColor: colors.borderSubtle,
+              borderWidth: 1,
+              borderRadius: radius.md,
+              color: colors.text,
+              padding: 12,
+              minHeight: 50,
+              fontSize: 14,
+            }}
+          />
+        </View>
+      ),
+      primaryAction: {
+        text: 'VERIFY & COMPLETE',
+        variant: 'primary',
+        onPress: async () => {
+          await handleCompleteChallenge(localProof);
+        }
+      },
+      secondaryAction: {
+        text: 'CANCEL',
+        variant: 'ghost',
+      }
+    });
   };
 
   const getTimeOfDayGreeting = () => {
@@ -208,7 +261,7 @@ export default function HomeScreen() {
           <ChallengeCard
             challenge={todayChallenge}
             completed={completedToday}
-            onComplete={handleCompleteChallenge}
+            onComplete={triggerCompleteChallengeWithProof}
             actionLoading={actionLoading}
             onShare={() => setShareVisible(true)}
           />

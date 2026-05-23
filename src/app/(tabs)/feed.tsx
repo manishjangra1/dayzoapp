@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, TextInput, Pressable, ScrollView, RefreshControl, Platform, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, TextInput, Pressable, ScrollView, RefreshControl, Platform, ActivityIndicator, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Users, Plus, Zap, Heart, MessageSquare, Compass, Search, UserPlus, Send, Smile } from 'lucide-react-native';
+import { Users, Plus, Zap, Heart, MessageSquare, Compass, Search, UserPlus, UserMinus, UserCheck, Send, Smile, X } from 'lucide-react-native';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
@@ -69,6 +69,84 @@ export default function SocialFeedScreen() {
   const [friendInput, setFriendInput] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
 
+  // Friends Alliance Modal State
+  const [friendsListVisible, setFriendsListVisible] = useState(false);
+  const [activeFriends, setActiveFriends] = useState<any[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+  const [fetchingFriends, setFetchingFriends] = useState(false);
+
+  const fetchSocialConnections = async () => {
+    try {
+      setFetchingFriends(true);
+      const resFriends = await api.get('/social/friends');
+      const resRequests = await api.get('/social/requests');
+      setActiveFriends(resFriends.data);
+      setPendingRequests(resRequests.data);
+    } catch (e) {
+      console.warn('Failed to load social connections:', e);
+    } finally {
+      setFetchingFriends(false);
+    }
+  };
+
+  const handleAcceptFriend = async (senderId: string, senderName: string) => {
+    try {
+      await api.post('/social/accept', { senderId });
+      dialog.show({
+        title: 'Alliance Formed!',
+        message: `You are now companions with @${senderName}!`,
+        primaryAction: { text: 'HOORAY!' }
+      });
+      fetchSocialConnections();
+      fetchFeed();
+    } catch (e) {
+      console.warn('Failed to accept request:', e);
+    }
+  };
+
+  const handleDeclineFriend = async (senderId: string, senderName: string) => {
+    try {
+      await api.post('/social/decline', { senderId });
+      dialog.show({
+        title: 'Request Declined',
+        message: `Companion request from @${senderName} has been declined.`,
+        primaryAction: { text: 'OK' }
+      });
+      fetchSocialConnections();
+    } catch (e) {
+      console.warn('Failed to decline request:', e);
+    }
+  };
+
+  const handleRemoveFriend = async (friendId: string, friendName: string) => {
+    dialog.show({
+      title: 'Sever Habit Alliance?',
+      message: `Are you sure you want to unfriend @${friendName}? You will no longer compile habits together in your activity feed.`,
+      primaryAction: {
+        text: 'UNFRIEND',
+        variant: 'danger',
+        onPress: async () => {
+          try {
+            await api.post('/social/remove', { friendId });
+            dialog.show({
+              title: 'Alliance Severed',
+              message: `You are no longer companions with @${friendName}.`,
+              primaryAction: { text: 'OK' }
+            });
+            fetchSocialConnections();
+            fetchFeed();
+          } catch (e) {
+            console.warn('Failed to remove friend:', e);
+          }
+        }
+      },
+      secondaryAction: {
+        text: 'CANCEL',
+        variant: 'ghost'
+      }
+    });
+  };
+
   const fetchFeed = async () => {
     try {
       const res = await api.get('/social/feed');
@@ -83,11 +161,13 @@ export default function SocialFeedScreen() {
 
   useEffect(() => {
     fetchFeed();
+    fetchSocialConnections();
   }, []);
 
   const onRefresh = () => {
     setRefreshing(true);
     fetchFeed();
+    fetchSocialConnections();
   };
 
   const handleAddFriend = async (targetUsername?: string) => {
@@ -222,6 +302,23 @@ export default function SocialFeedScreen() {
               Atomic consistency is highly infectious.
             </Text>
           </View>
+          
+          <Pressable 
+            onPress={() => {
+              fetchSocialConnections();
+              setFriendsListVisible(true);
+            }} 
+            style={[styles.companionsTriggerBtn, { backgroundColor: colors.surfaceElevated, borderColor: colors.borderSubtle }]}
+          >
+            <Users size={16} color={colors.primary} />
+            {pendingRequests.length > 0 && (
+              <View style={[styles.requestsCountBadge, { backgroundColor: colors.error }]}>
+                <Text variant="micro" weight="bold" color="#FFFFFF" style={{ fontSize: 9, lineHeight: 11 }}>
+                  {pendingRequests.length}
+                </Text>
+              </View>
+            )}
+          </Pressable>
         </View>
 
         <Spacer size="sm" />
@@ -553,6 +650,143 @@ export default function SocialFeedScreen() {
           <Spacer size="5xl" />
         </ScrollView>
       )}
+
+      {/* Companions Alliance Modal Overlay */}
+      <Modal visible={friendsListVisible} animationType="slide" transparent>
+        <View
+          style={[
+            styles.modalOverlay,
+            {
+              backgroundColor: colors.background,
+              paddingTop: Math.max(insets.top, 16) + 12,
+              paddingBottom: Math.max(insets.bottom, 16) + 12,
+            },
+          ]}
+        >
+          {/* Header */}
+          <View style={styles.modalHeader}>
+            <View>
+              <Text variant="h2" weight="bold" color={colors.text}>
+                Companions Alliance
+              </Text>
+              <Text variant="caption" color={colors.textTertiary}>
+                Grow and manage your habit sharing circle.
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => setFriendsListVisible(false)}
+              style={[styles.closeBtn, { backgroundColor: colors.surfaceHover }]}
+            >
+              <X color={colors.text} size={18} />
+            </Pressable>
+          </View>
+
+          <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1, width: '100%' }}>
+            <Spacer size="md" />
+
+            {/* Pending Requests Section */}
+            {pendingRequests.length > 0 && (
+              <View>
+                <Text variant="caption" weight="bold" color={colors.textTertiary} style={styles.modalSectionTitle}>
+                  PENDING INVITATION ALLIANCES ({pendingRequests.length})
+                </Text>
+                <Surface elevation="raised" borderRadius="2xl" bordered style={styles.allianceList}>
+                  {pendingRequests.map((item, index) => (
+                    <View
+                      key={item.id}
+                      style={[
+                        styles.allianceRow,
+                        index < pendingRequests.length - 1 && { borderBottomColor: colors.borderSubtle },
+                      ]}
+                    >
+                      <View style={styles.allianceInfo}>
+                        <UserAvatar uri={item.avatar} username={item.username} size="sm" />
+                        <View>
+                          <Text variant="bodySmall" weight="bold" color={colors.text}>
+                            @{item.username}
+                          </Text>
+                          <Text variant="micro" color={colors.textTertiary}>
+                            Level {item.level || 1} • Invites you
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.actionButtonsRow}>
+                        <Pressable
+                          onPress={() => handleAcceptFriend(item.id, item.username)}
+                          style={[styles.modalActionBtn, { backgroundColor: 'rgba(16, 185, 129, 0.15)', marginRight: 6 }]}
+                        >
+                          <UserCheck size={14} color={colors.success} />
+                        </Pressable>
+                        <Pressable
+                          onPress={() => handleDeclineFriend(item.id, item.username)}
+                          style={[styles.modalActionBtn, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}
+                        >
+                          <X size={14} color={colors.error} />
+                        </Pressable>
+                      </View>
+                    </View>
+                  ))}
+                </Surface>
+                <Spacer size="lg" />
+              </View>
+            )}
+
+            {/* Active Friends List */}
+            <Text variant="caption" weight="bold" color={colors.textTertiary} style={styles.modalSectionTitle}>
+              ACTIVE ALLIANCES ({activeFriends.length})
+            </Text>
+            
+            <Surface elevation="raised" borderRadius="2xl" bordered style={styles.allianceList}>
+              {fetchingFriends ? (
+                <View style={{ padding: 24, alignItems: 'center' }}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                </View>
+              ) : activeFriends.length === 0 ? (
+                <View style={{ padding: 32, alignItems: 'center' }}>
+                  <Users size={32} color={colors.textSecondary} style={{ opacity: 0.3, marginBottom: 8 }} />
+                  <Text variant="bodySmall" color={colors.textTertiary} align="center">
+                    No active habit companions.
+                  </Text>
+                  <Text variant="micro" color={colors.textTertiary} align="center" style={{ marginTop: 2, paddingHorizontal: 16 }}>
+                    Search and invite other high-performers to start tracking streak progress in public!
+                  </Text>
+                </View>
+              ) : (
+                activeFriends.map((item, index) => (
+                  <View
+                    key={item.id}
+                    style={[
+                      styles.allianceRow,
+                      index < activeFriends.length - 1 && { borderBottomColor: colors.borderSubtle },
+                    ]}
+                  >
+                    <View style={styles.allianceInfo}>
+                      <UserAvatar uri={item.avatar} username={item.username} size="sm" borderRankColor={colors.primary} />
+                      <View>
+                        <Text variant="bodySmall" weight="bold" color={colors.text}>
+                          @{item.username}
+                        </Text>
+                        <Text variant="micro" color={colors.textTertiary}>
+                          Level {item.level || 1} • {item.streak || 0}🔥 Streak • {item.xp || 0} XP
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Pressable
+                      onPress={() => handleRemoveFriend(item.id, item.username)}
+                      style={[styles.modalActionBtn, { backgroundColor: colors.surfaceElevated }]}
+                    >
+                      <UserMinus size={14} color={colors.error} />
+                    </Pressable>
+                  </View>
+                ))
+              )}
+            </Surface>
+            <Spacer size="5xl" />
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -787,6 +1021,81 @@ const styles = StyleSheet.create({
   },
   emptyResultsRow: {
     padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  companionsTriggerBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    position: 'relative',
+  },
+  requestsCountBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 16,
+  },
+  modalHeader: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  closeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalSectionTitle: {
+    marginLeft: 4,
+    marginBottom: 6,
+    letterSpacing: 1,
+    marginTop: 12,
+  },
+  allianceList: {
+    overflow: 'hidden',
+  },
+  allianceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+  },
+  allianceInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  modalActionBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },

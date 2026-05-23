@@ -1,9 +1,10 @@
 import React from 'react';
-import { StyleSheet, View, ScrollView, Pressable, Platform } from 'react-native';
+import { StyleSheet, View, ScrollView, Pressable, Platform, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LogOut, Award, ShieldAlert, Sparkles, UserCheck, Flame, Zap } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/authStore';
+import api from '../../services/api';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
 import { useDialog } from '../../design-system/theme/DialogProvider';
 import { Text } from '../../design-system/primitives/Text';
@@ -17,8 +18,65 @@ export default function ProfileScreen() {
   const { colors, isDark } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { user, clearAuth } = useAuthStore();
+  const { user, clearAuth, updateUser } = useAuthStore();
   const dialog = useDialog();
+
+  const handleEditBio = () => {
+    let localBio = user?.bio || '';
+    dialog.show({
+      title: 'Update Biography',
+      message: (
+        <View style={{ width: '100%', paddingVertical: 8 }}>
+          <TextInput
+            defaultValue={user?.bio || ''}
+            onChangeText={(txt) => { localBio = txt; }}
+            placeholder="Describe your habits focus..."
+            placeholderTextColor={colors.textTertiary}
+            multiline
+            numberOfLines={3}
+            style={{
+              width: '100%',
+              backgroundColor: colors.surfaceElevated,
+              borderColor: colors.borderSubtle,
+              borderWidth: 1,
+              borderRadius: radius.md,
+              color: colors.text,
+              padding: 12,
+              minHeight: 80,
+              fontSize: 14,
+              textAlignVertical: 'top',
+            }}
+          />
+        </View>
+      ),
+      primaryAction: {
+        text: 'SAVE',
+        variant: 'primary',
+        onPress: async () => {
+          try {
+            const res = await api.patch('/users/profile', { bio: localBio });
+            updateUser(res.data);
+            dialog.show({
+              title: 'Success',
+              message: 'Your biography has been successfully updated!',
+              primaryAction: { text: 'OK' }
+            });
+          } catch (e) {
+            console.warn('Failed to update bio:', e);
+            dialog.show({
+              title: 'Error',
+              message: 'Failed to save bio settings. Please try again.',
+              primaryAction: { text: 'OK' }
+            });
+          }
+        }
+      },
+      secondaryAction: {
+        text: 'CANCEL',
+        variant: 'ghost',
+      }
+    });
+  };
 
   const handleLogout = () => {
     dialog.show({
@@ -76,6 +134,15 @@ export default function ProfileScreen() {
           <Text variant="caption" color={colors.textTertiary} style={{ marginTop: 2 }}>
             Dayzo Habit Agent • Level {user?.level || 1}
           </Text>
+          {user?.bio ? (
+            <Text variant="bodySmall" color={colors.textSecondary} style={{ marginTop: 8, fontStyle: 'italic' }}>
+              "{user.bio}"
+            </Text>
+          ) : (
+            <Text variant="caption" color={colors.textTertiary} style={{ marginTop: 8, fontStyle: 'italic', opacity: 0.6 }}>
+              No biography written yet. Click "Update Biography" below to share your daily habit focus!
+            </Text>
+          )}
 
           <Spacer size="xl" />
 
@@ -116,7 +183,7 @@ export default function ProfileScreen() {
               {user.badges.map((badge: any) => {
                 return (
                   <View key={badge.id} style={[styles.badgeItem, { backgroundColor: colors.surfaceElevated, borderColor: colors.borderSubtle }]}>
-                    <Text style={{ fontSize: 32 }}>{badge.icon}</Text>
+                    <Text style={{ fontSize: 28 }}>{badge.icon}</Text>
                     <Spacer size="xs" />
                     <Text variant="micro" weight="bold" color={colors.text} align="center" numberOfLines={1}>
                       {badge.title}
@@ -146,10 +213,19 @@ export default function ProfileScreen() {
         </Text>
 
         <Surface elevation="raised" borderRadius="xl" bordered style={styles.utilitiesCard}>
+          <Pressable onPress={handleEditBio} style={styles.utilityBtn}>
+            <Sparkles size={18} color={colors.primary} style={{ marginRight: 12 }} />
+            <Text variant="bodySmall" weight="bold" color={colors.text}>
+              Update Biography
+            </Text>
+          </Pressable>
+
+          <View style={{ height: 1, backgroundColor: colors.borderSubtle, marginHorizontal: 16 }} />
+
           <Pressable onPress={handleLogout} style={styles.utilityBtn}>
             <LogOut size={18} color={colors.error} style={{ marginRight: 12 }} />
             <Text variant="bodySmall" weight="bold" color={colors.error}>
-              Logout Active Session
+              Logout
             </Text>
           </Pressable>
         </Surface>
@@ -221,16 +297,19 @@ const styles = StyleSheet.create({
   badgeRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    marginHorizontal: -4,
   },
   badgeItem: {
     width: '22%',
-    aspectRatio: 0.8,
+    marginHorizontal: 5,
+    marginVertical: 6,
+    minHeight: 90,
     borderRadius: radius.md,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
   },
   emptyCabinet: {
     padding: 24,
