@@ -200,8 +200,8 @@ export default function LeaderboardScreen() {
         {top3.length > 0 ? (
           <View style={styles.podiumContainer}>
             
-            {/* Rank 2 Podium (Silver Glow) */}
-            {top3[1] && (
+            {/* Rank 2 Podium (Silver Glow / Empty Spot) */}
+            {top3[1] ? (
               <View style={styles.podiumCol}>
                 <View style={styles.avatarGlowHalo}>
                   <UserAvatar uri={top3[1].avatar} username={top3[1].username} size="md" borderRankColor="rgba(255,255,255,0.6)" />
@@ -234,20 +234,52 @@ export default function LeaderboardScreen() {
                   </Text>
                 </GlassCard>
               </View>
+            ) : (
+              <View style={styles.podiumCol}>
+                <View style={[styles.avatarGlowHalo, styles.emptyAvatarHalo]}>
+                  <View style={[styles.emptyAvatarCircle, { borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)' }]}>
+                    <Text variant="micro" weight="bold" color={colors.textTertiary}>?</Text>
+                  </View>
+                </View>
+                <Spacer size="xs" />
+                <Text variant="caption" weight="bold" color={colors.textTertiary} numberOfLines={1} style={styles.podiumName}>
+                  Claim Spot
+                </Text>
+                <Text variant="micro" weight="bold" color={colors.textTertiary}>
+                  Secured XP
+                </Text>
+                <GlassCard
+                  borderRadius="lg"
+                  intensity="low"
+                  style={[
+                    styles.podiumPillar,
+                    {
+                      height: 85,
+                      borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                      backgroundColor: 'rgba(0,0,0,0.01)',
+                      borderStyle: 'dashed',
+                    }
+                  ]}
+                >
+                  <Text variant="h1" weight="display" color={isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'} style={styles.podiumNumber}>
+                    2
+                  </Text>
+                </GlassCard>
+              </View>
             )}
 
             {/* Rank 1 Podium (Golden Holographic Glow + Crown) */}
             {top3[0] && (
               <View style={[styles.podiumCol, styles.centerPillarWrapper]}>
-                <Crown size={24} color="#FFD700" fill="#FFD700" style={styles.crownIcon} />
+                <Crown size={24} color={isDark ? '#FFD700' : '#C59B27'} fill={isDark ? '#FFD700' : '#C59B27'} style={styles.crownIcon} />
                 <View style={styles.avatarGlowHalo}>
-                  <UserAvatar uri={top3[0].avatar} username={top3[0].username} size="lg" borderRankColor="#FFD700" />
+                  <UserAvatar uri={top3[0].avatar} username={top3[0].username} size="lg" borderRankColor={isDark ? '#FFD700' : '#C59B27'} />
                 </View>
                 <Spacer size="xs" />
                 <Text variant="bodySmall" weight="bold" color={colors.text} numberOfLines={1} style={styles.podiumName}>
                   @{top3[0].username}
                 </Text>
-                <Text variant="caption" weight="bold" color="#FFD700">
+                <Text variant="caption" weight="bold" color={isDark ? '#FFD700' : '#C59B27'}>
                   {top3[0].xp} XP
                 </Text>
                 <GlassCard
@@ -257,24 +289,24 @@ export default function LeaderboardScreen() {
                     styles.podiumPillar,
                     {
                       height: 120,
-                      borderColor: '#FFD700',
-                      backgroundColor: 'rgba(255, 215, 0, 0.05)',
+                      borderColor: isDark ? '#FFD700' : '#D4AF37',
+                      backgroundColor: isDark ? 'rgba(255, 215, 0, 0.05)' : 'rgba(212, 175, 55, 0.06)',
                     }
                   ]}
                 >
                   <LinearGradient
-                    colors={['rgba(255,215,0,0.2)', 'transparent']}
+                    colors={[isDark ? 'rgba(255,215,0,0.2)' : 'rgba(212,175,55,0.15)', 'transparent']}
                     style={[StyleSheet.absoluteFill, { borderRadius: radius.md }]}
                   />
-                  <Text variant="hero" weight="display" color="#FFD700" style={{ textShadowColor: 'rgba(255,215,0,0.5)', textShadowRadius: 10 }}>
+                  <Text variant="hero" weight="display" color={isDark ? '#FFD700' : '#D4AF37'} style={{ textShadowColor: isDark ? 'rgba(255,215,0,0.5)' : 'rgba(212,175,55,0.3)', textShadowRadius: 10 }}>
                     1
                   </Text>
                 </GlassCard>
               </View>
             )}
 
-            {/* Rank 3 Podium (Bronze Glow) */}
-            {top3[2] && (
+            {/* Rank 3 Podium (Bronze Glow / Empty Spot) */}
+            {top3[2] ? (
               <View style={styles.podiumCol}>
                 <View style={styles.avatarGlowHalo}>
                   <UserAvatar uri={top3[2].avatar} username={top3[2].username} size="md" borderRankColor="rgba(244,63,94,0.6)" />
@@ -303,6 +335,38 @@ export default function LeaderboardScreen() {
                     style={[StyleSheet.absoluteFill, { borderRadius: radius.md }]}
                   />
                   <Text variant="h2" weight="display" color="rgba(244,63,94,0.8)" style={styles.podiumNumber}>
+                    3
+                  </Text>
+                </GlassCard>
+              </View>
+            ) : (
+              <View style={styles.podiumCol}>
+                <View style={[styles.avatarGlowHalo, styles.emptyAvatarHalo]}>
+                  <View style={[styles.emptyAvatarCircle, { borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)' }]}>
+                    <Text variant="micro" weight="bold" color={colors.textTertiary}>?</Text>
+                  </View>
+                </View>
+                <Spacer size="xs" />
+                <Text variant="caption" weight="bold" color={colors.textTertiary} numberOfLines={1} style={styles.podiumName}>
+                  Claim Spot
+                </Text>
+                <Text variant="micro" weight="bold" color={colors.textTertiary}>
+                  Secured XP
+                </Text>
+                <GlassCard
+                  borderRadius="lg"
+                  intensity="low"
+                  style={[
+                    styles.podiumPillar,
+                    {
+                      height: 70,
+                      borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                      backgroundColor: 'rgba(0,0,0,0.01)',
+                      borderStyle: 'dashed',
+                    }
+                  ]}
+                >
+                  <Text variant="h2" weight="display" color={isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'} style={styles.podiumNumber}>
                     3
                   </Text>
                 </GlassCard>
@@ -340,6 +404,52 @@ export default function LeaderboardScreen() {
             ))
           )}
         </View>
+
+        {remainder.length === 0 && (
+          <>
+            <Spacer size="md" />
+            <GlassCard
+              borderRadius="2xl"
+              style={[
+                styles.inviteCard,
+                {
+                  borderColor: isDark ? 'rgba(255, 75, 43, 0.2)' : 'rgba(255, 75, 43, 0.1)',
+                  backgroundColor: isDark ? 'rgba(20, 20, 26, 0.5)' : 'rgba(255, 255, 255, 0.8)',
+                }
+              ]}
+            >
+              <LinearGradient
+                colors={['rgba(255, 75, 43, 0.04)', 'transparent']}
+                style={[StyleSheet.absoluteFill, { borderRadius: radius.xl }]}
+              />
+              <View style={styles.inviteHeader}>
+                <Award size={20} color={colors.primary} />
+                <Text variant="bodySmall" weight="bold" color={colors.text} style={{ marginLeft: 6 }}>
+                  Assemble Your Crew
+                </Text>
+              </View>
+              <Text variant="caption" color={colors.textSecondary} style={styles.inviteDesc}>
+                Streaks are better with companions! Invite your companions to this arena to rank total XP, lock in daily consistency, and compile atomic habits together.
+              </Text>
+              <Spacer size="sm" />
+              <Pressable
+                onPress={onRefresh}
+                style={({ pressed }) => [
+                  styles.inviteBtn,
+                  {
+                    backgroundColor: colors.primary,
+                    opacity: pressed ? 0.9 : 1,
+                  }
+                ]}
+              >
+                <Text variant="bodySmall" weight="bold" color="#FFFFFF">
+                  INVITE COMPANIONS
+                </Text>
+              </Pressable>
+            </GlassCard>
+          </>
+        )}
+
         <Spacer size="5xl" />
       </ScrollView>
     </View>
@@ -476,5 +586,40 @@ const styles = StyleSheet.create({
   },
   crownIcon: {
     marginBottom: 4,
+  },
+  emptyAvatarHalo: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyAvatarCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  inviteCard: {
+    padding: 20,
+    borderWidth: 1,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  inviteHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  inviteDesc: {
+    lineHeight: 18,
+  },
+  inviteBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
