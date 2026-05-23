@@ -56,7 +56,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { user, token, isAuthenticated, updateUser } = useAuthStore();
 
-  const [todayChallenge, setTodayChallenge] = useState<any>(null);
+  const [todayChallenges, setTodayChallenges] = useState<any[]>([]);
   const [completedToday, setCompletedToday] = useState(false);
   const [weeklyConsistency, setWeeklyConsistency] = useState<any[]>(() => generateCurrentWeekDays());
   const [loading, setLoading] = useState(true);
@@ -66,7 +66,7 @@ export default function HomeScreen() {
   const fetchHomeData = async () => {
     try {
       const resChallenge = await api.get('/challenges/today');
-      setTodayChallenge(resChallenge.data);
+      setTodayChallenges(resChallenge.data);
 
       const resProfile = await api.get('/users/profile');
       updateUser(resProfile.data);
@@ -101,16 +101,25 @@ export default function HomeScreen() {
 
   const dialog = useDialog();
   const [shareVisible, setShareVisible] = useState(false);
-  const [proofText, setProofText] = useState('');
 
-  const handleCompleteChallenge = async (submittedProof: string) => {
-    if (!todayChallenge) return;
+  const handleCompleteChallenge = async (challengeId: string, submittedProof: string) => {
     try {
       setActionLoading(true);
       await api.post('/challenges/complete', {
+        challengeId,
         proofText: submittedProof.trim() || undefined
       });
-      setCompletedToday(true);
+      
+      // Update challenges list locally
+      setTodayChallenges((prevChallenges) => {
+        const updated = prevChallenges.map(c => 
+          c.id === challengeId ? { ...c, completed: true, proofText: submittedProof } : c
+        );
+        const hasCompletedAll = updated.every(c => c.completed);
+        setCompletedToday(hasCompletedAll);
+        return updated;
+      });
+
       setWeeklyConsistency((prev) =>
         prev.map((d) => (d.isToday ? { ...d, completed: true } : d))
       );
@@ -128,18 +137,17 @@ export default function HomeScreen() {
       });
     } finally {
       setActionLoading(false);
-      setProofText('');
     }
   };
 
-  const triggerCompleteChallengeWithProof = () => {
+  const triggerCompleteChallengeWithProof = (challengeId: string) => {
     let localProof = '';
     dialog.show({
       title: 'Challenge Verification',
       message: (
         <View style={{ width: '100%', paddingVertical: 8 }}>
           <Text variant="bodySmall" color={colors.textSecondary} style={{ marginBottom: 8 }}>
-            Type a quick note of verification (e.g. "Did 20 pushups in my bedroom!")
+            Type a quick note of verification (e.g. "Completed my daily task successfully!")
           </Text>
           <TextInput
             placeholder="Type completion log..."
@@ -163,7 +171,7 @@ export default function HomeScreen() {
         text: 'VERIFY & COMPLETE',
         variant: 'primary',
         onPress: async () => {
-          await handleCompleteChallenge(localProof);
+          await handleCompleteChallenge(challengeId, localProof);
         }
       },
       secondaryAction: {
@@ -270,7 +278,7 @@ export default function HomeScreen() {
               <View style={styles.energyRow}>
                 <Zap size={12} color="#00F2FE" fill="#00F2FE" />
                 <Text variant="micro" weight="bold" color={colors.textSecondary}>
-                  DAILY FUEL: {completedToday ? '5/5 UNITS FULL' : '3/5 UNITS ACTIVE'}
+                  DAILY FUEL: {todayChallenges ? todayChallenges.filter((c: any) => c.completed).length : 0}/5 UNITS FULL
                 </Text>
               </View>
             </View>
@@ -284,26 +292,29 @@ export default function HomeScreen() {
 
         <Spacer size="md" />
 
-        {/* Today's Challenge Section */}
+        {/* Today's Challenges Section */}
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleCol}>
             <Text variant="h2" weight="display" color={colors.text}>
-              Today's Challenge
+              Today's Challenges
             </Text>
             <Text variant="micro" weight="bold" color={colors.textSecondary} style={{ letterSpacing: 0.5 }}>
-              ROTATES EVERY 24 HOURS
+              5 QUESTS ACTIVE • ROTATES EVERY 24 HOURS
             </Text>
           </View>
         </View>
 
-        {todayChallenge ? (
-          <ChallengeCard
-            challenge={todayChallenge}
-            completed={completedToday}
-            onComplete={triggerCompleteChallengeWithProof}
-            actionLoading={actionLoading}
-            onShare={() => setShareVisible(true)}
-          />
+        {todayChallenges && todayChallenges.length > 0 ? (
+          todayChallenges.map((chall: any) => (
+            <ChallengeCard
+              key={chall.id}
+              challenge={chall}
+              completed={chall.completed}
+              onComplete={() => triggerCompleteChallengeWithProof(chall.id)}
+              actionLoading={actionLoading}
+              onShare={() => setShareVisible(true)}
+            />
+          ))
         ) : (
           <GlassCard borderRadius="2xl" style={styles.emptyCard}>
             <Compass size={32} color={colors.textTertiary} style={{ opacity: 0.4, marginBottom: 8 }} />
@@ -326,9 +337,9 @@ export default function HomeScreen() {
         onClose={() => setShareVisible(false)}
         username={user?.username || 'user'}
         streak={user?.streak || 0}
-        xp={todayChallenge?.xpReward || 15}
+        xp={todayChallenges ? todayChallenges.reduce((sum: number, c: any) => sum + (c.completed ? c.xpReward : 0), 0) : 0}
         levelTitle={user?.title || 'Rookie'}
-        challengeTitle={todayChallenge?.title || 'Daily Commit'}
+        challenges={todayChallenges || []}
       />
     </View>
   );

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Pressable, ScrollView, RefreshControl, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Trophy, Award, Crown, ArrowUp, ArrowDown, Minus } from 'lucide-react-native';
+import { Trophy, Award, Crown, ArrowUp, ArrowDown, Minus, Sparkles, Zap, Flame } from 'lucide-react-native';
 import api from '../../services/api';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
 import { Text } from '../../design-system/primitives/Text';
@@ -84,46 +84,60 @@ export default function LeaderboardScreen() {
 
     return (
       <Animated.View style={animatedStyle}>
-        <View style={[styles.rankRow, { borderBottomColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' }]}>
+        <GlassCard
+          borderRadius="xl"
+          intensity="low"
+          style={[
+            styles.rankRowCard,
+            {
+              borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+              backgroundColor: isDark ? 'rgba(20, 20, 26, 0.4)' : 'rgba(255,255,255,0.7)',
+            }
+          ]}
+        >
           <View style={styles.rankRowLeft}>
             <View style={styles.rankBadgeCell}>
-              <Text variant="bodySmall" weight="bold" color={colors.textTertiary} style={styles.rankNum}>
+              <Text variant="bodySmall" weight="bold" color={colors.textSecondary} style={styles.rankNum}>
                 {rank}
               </Text>
               
               {/* Dynamic shift indicator */}
               {movement === 'up' ? (
-                <ArrowUp size={10} color="#34D399" />
+                <ArrowUp size={10} color="#10B981" />
               ) : movement === 'down' ? (
-                <ArrowDown size={10} color="#F87171" />
+                <ArrowDown size={10} color="#EF4444" />
               ) : (
                 <Minus size={10} color={colors.textTertiary} />
               )}
             </View>
 
-            <UserAvatar uri={item.avatar} username={item.username} size="sm" />
+            <UserAvatar uri={item.avatar} username={item.username} size="sm" borderRankColor="rgba(255,255,255,0.15)" />
             
             <View style={styles.rankInfo}>
               <Text variant="bodySmall" weight="bold" color={colors.text}>
                 @{item.username}
               </Text>
-              <Text variant="micro" color={colors.textTertiary}>
+              <Text variant="micro" color={colors.textSecondary} style={{ opacity: 0.7 }}>
                 Level {item.level || 1} • {item.title || 'Rookie'}
               </Text>
             </View>
           </View>
 
           <View style={styles.rankRowRight}>
-            <Text variant="bodySmall" weight="bold" color={colors.text}>
-              {item.xp} <Text variant="micro" color={colors.textTertiary}>XP</Text>
-            </Text>
-            <View style={styles.streakPillRow}>
-              <Text variant="micro" weight="bold" color={colors.primary}>
-                {item.streak || 0}🔥
+            <View style={[styles.statBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)' }]}>
+              <Zap size={11} color={colors.primary} fill={colors.primary} />
+              <Text variant="micro" weight="bold" color={colors.text}>
+                {item.xp} XP
+              </Text>
+            </View>
+            <View style={[styles.statBadge, { backgroundColor: 'rgba(255, 75, 43, 0.08)' }]}>
+              <Flame size={11} color="#FF4B2B" fill="#FF4B2B" />
+              <Text variant="micro" weight="bold" color="#FF4B2B">
+                {item.streak || 0}D
               </Text>
             </View>
           </View>
-        </View>
+        </GlassCard>
       </Animated.View>
     );
   };
@@ -131,7 +145,7 @@ export default function LeaderboardScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       
-      {/* Dynamic Backing Mesh Gradients */}
+      {/* Dynamic Ambient Mesh Backplates */}
       <View style={StyleSheet.absoluteFill}>
         <LinearGradient
           colors={isDark ? ['#08080C', '#0E0E12'] : ['#F4F5F7', '#EBEFF3']}
@@ -141,11 +155,15 @@ export default function LeaderboardScreen() {
           <>
             <LinearGradient
               colors={['rgba(255, 75, 43, 0.08)', 'transparent']}
-              style={[styles.ambientOrb, { top: -60, left: -60, width: 280, height: 280 }]}
+              style={[styles.ambientOrb, { top: -80, left: -60, width: 280, height: 280 }]}
             />
             <LinearGradient
               colors={['rgba(138, 35, 135, 0.06)', 'transparent']}
               style={[styles.ambientOrb, { bottom: 120, right: -80, width: 340, height: 340 }]}
+            />
+            <LinearGradient
+              colors={['rgba(0, 242, 254, 0.04)', 'transparent']}
+              style={[styles.ambientOrb, { top: '35%', right: -40, width: 260, height: 260 }]}
             />
           </>
         )}
@@ -153,12 +171,15 @@ export default function LeaderboardScreen() {
 
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 8, borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' }]}>
-        <Text variant="h2" weight="bold" color={colors.text}>
-          Arena
-        </Text>
-        <Text variant="caption" color={colors.textTertiary}>
-          Streak metrics & ranking.
-        </Text>
+        <View style={styles.headerLeftCol}>
+          <Text variant="h1" weight="display" color={colors.text}>
+            Arena
+          </Text>
+          <Text variant="micro" weight="bold" color={colors.textSecondary} style={{ letterSpacing: 1.2 }}>
+            STREAK METRICS & RANKINGS
+          </Text>
+        </View>
+        <Trophy size={20} color={colors.primary} />
       </View>
 
       <ScrollView
@@ -171,12 +192,12 @@ export default function LeaderboardScreen() {
         <Spacer size="md" />
 
         {/* Unified Glass Scope Switcher */}
-        <GlassCard borderRadius="full" style={styles.scopeSwitcher}>
+        <GlassCard borderRadius="full" intensity="high" style={[styles.scopeSwitcher, { borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
           <Pressable
             onPress={() => setScope('global')}
             style={[styles.scopeBtn, scope === 'global' && { backgroundColor: colors.primary, borderRadius: radius.full }]}
           >
-            <Text variant="micro" weight="bold" color={scope === 'global' ? colors.surface : colors.textSecondary}>
+            <Text variant="micro" weight="bold" color={scope === 'global' ? '#FFFFFF' : colors.textSecondary}>
               GLOBAL ARENA
             </Text>
           </Pressable>
@@ -184,7 +205,7 @@ export default function LeaderboardScreen() {
             onPress={() => setScope('friends')}
             style={[styles.scopeBtn, scope === 'friends' && { backgroundColor: colors.primary, borderRadius: radius.full }]}
           >
-            <Text variant="micro" weight="bold" color={scope === 'friends' ? colors.surface : colors.textSecondary}>
+            <Text variant="micro" weight="bold" color={scope === 'friends' ? '#FFFFFF' : colors.textSecondary}>
               MY COMPANIONS
             </Text>
           </Pressable>
@@ -192,14 +213,16 @@ export default function LeaderboardScreen() {
 
         <Spacer size="lg" />
 
-        {/* 3D Golden/Holographic Podium Spotlights */}
+        {/* 3D Holographic Podium Spotlights */}
         {top3.length > 0 ? (
           <View style={styles.podiumContainer}>
             
             {/* Rank 2 Podium (Silver Glow) */}
             {top3[1] && (
               <View style={styles.podiumCol}>
-                <UserAvatar uri={top3[1].avatar} username={top3[1].username} size="md" borderRankColor="rgba(255,255,255,0.4)" />
+                <View style={styles.avatarGlowHalo}>
+                  <UserAvatar uri={top3[1].avatar} username={top3[1].username} size="md" borderRankColor="rgba(255,255,255,0.6)" />
+                </View>
                 <Spacer size="xs" />
                 <Text variant="caption" weight="bold" color={colors.text} numberOfLines={1} style={styles.podiumName}>
                   @{top3[1].username}
@@ -207,36 +230,64 @@ export default function LeaderboardScreen() {
                 <Text variant="micro" weight="bold" color={colors.primary}>
                   {top3[1].xp} XP
                 </Text>
-                <GlassCard borderRadius="lg" style={[styles.podiumPillar, { height: 75, borderColor: 'rgba(255,255,255,0.25)' }]}>
+                <GlassCard
+                  borderRadius="lg"
+                  intensity="high"
+                  style={[
+                    styles.podiumPillar,
+                    {
+                      height: 85,
+                      borderColor: 'rgba(255,255,255,0.2)',
+                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    }
+                  ]}
+                >
                   <LinearGradient
-                    colors={['rgba(255,255,255,0.06)', 'transparent']}
+                    colors={['rgba(255,255,255,0.15)', 'transparent']}
                     style={[StyleSheet.absoluteFill, { borderRadius: radius.md }]}
                   />
-                  <Text variant="h1" weight="display" color={colors.textSecondary}>
+                  <Text variant="h1" weight="display" color="rgba(255,255,255,0.8)" style={styles.podiumNumber}>
                     2
                   </Text>
                 </GlassCard>
               </View>
             )}
 
-            {/* Rank 1 Podium (Holographic Golden Glow + Crown) */}
+            {/* Rank 1 Podium (Golden Holographic Glow + Crown) */}
             {top3[0] && (
               <View style={[styles.podiumCol, styles.centerPillarWrapper]}>
-                <Crown size={22} color="#FFD700" fill="#FFD700" style={styles.crownIcon} />
-                <UserAvatar uri={top3[0].avatar} username={top3[0].username} size="lg" borderRankColor="#FFD700" />
+                <Crown size={24} color="#FFD700" fill="#FFD700" style={styles.crownIcon} />
+                <View style={[styles.avatarGlowHalo, { shadowColor: '#FFD700', shadowRadius: 10, shadowOpacity: 0.4 }]}>
+                  <UserAvatar uri={top3[0].avatar} username={top3[0].username} size="lg" borderRankColor="#FFD700" />
+                </View>
                 <Spacer size="xs" />
                 <Text variant="bodySmall" weight="bold" color={colors.text} numberOfLines={1} style={styles.podiumName}>
                   @{top3[0].username}
                 </Text>
-                <Text variant="caption" weight="bold" color={colors.primary}>
+                <Text variant="caption" weight="bold" color="#FFD700">
                   {top3[0].xp} XP
                 </Text>
-                <GlassCard borderRadius="lg" style={[styles.podiumPillar, { height: 110, borderColor: '#FFD700' }]}>
+                <GlassCard
+                  borderRadius="lg"
+                  intensity="high"
+                  style={[
+                    styles.podiumPillar,
+                    {
+                      height: 120,
+                      borderColor: '#FFD700',
+                      backgroundColor: 'rgba(255, 215, 0, 0.05)',
+                      shadowColor: '#FFD700',
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.2,
+                      shadowRadius: 12,
+                    }
+                  ]}
+                >
                   <LinearGradient
-                    colors={['rgba(255,215,0,0.15)', 'transparent']}
+                    colors={['rgba(255,215,0,0.2)', 'transparent']}
                     style={[StyleSheet.absoluteFill, { borderRadius: radius.md }]}
                   />
-                  <Text variant="hero" weight="display" color="#FFD700" style={{ textShadowColor: 'rgba(255,215,0,0.4)', textShadowRadius: 8 }}>
+                  <Text variant="hero" weight="display" color="#FFD700" style={{ textShadowColor: 'rgba(255,215,0,0.5)', textShadowRadius: 10 }}>
                     1
                   </Text>
                 </GlassCard>
@@ -246,7 +297,9 @@ export default function LeaderboardScreen() {
             {/* Rank 3 Podium (Bronze Glow) */}
             {top3[2] && (
               <View style={styles.podiumCol}>
-                <UserAvatar uri={top3[2].avatar} username={top3[2].username} size="md" borderRankColor="rgba(242,113,33,0.3)" />
+                <View style={styles.avatarGlowHalo}>
+                  <UserAvatar uri={top3[2].avatar} username={top3[2].username} size="md" borderRankColor="rgba(244,63,94,0.6)" />
+                </View>
                 <Spacer size="xs" />
                 <Text variant="caption" weight="bold" color={colors.text} numberOfLines={1} style={styles.podiumName}>
                   @{top3[2].username}
@@ -254,12 +307,23 @@ export default function LeaderboardScreen() {
                 <Text variant="micro" weight="bold" color={colors.primary}>
                   {top3[2].xp} XP
                 </Text>
-                <GlassCard borderRadius="lg" style={[styles.podiumPillar, { height: 60, borderColor: 'rgba(242,113,33,0.2)' }]}>
+                <GlassCard
+                  borderRadius="lg"
+                  intensity="high"
+                  style={[
+                    styles.podiumPillar,
+                    {
+                      height: 70,
+                      borderColor: 'rgba(244,63,94,0.25)',
+                      backgroundColor: 'rgba(244, 63, 94, 0.04)',
+                    }
+                  ]}
+                >
                   <LinearGradient
-                    colors={['rgba(242,113,33,0.06)', 'transparent']}
+                    colors={['rgba(244,63,94,0.15)', 'transparent']}
                     style={[StyleSheet.absoluteFill, { borderRadius: radius.md }]}
                   />
-                  <Text variant="h2" weight="display" color={colors.textTertiary}>
+                  <Text variant="h2" weight="display" color="rgba(244,63,94,0.8)" style={styles.podiumNumber}>
                     3
                   </Text>
                 </GlassCard>
@@ -277,15 +341,15 @@ export default function LeaderboardScreen() {
 
         <Spacer size="lg" />
 
-        {/* Lower rank levels grid */}
-        <GlassCard borderRadius="2xl" style={[styles.ranksCard, { borderColor: 'rgba(255,255,255,0.05)' }]}>
+        {/* Lower Ranks Grid List */}
+        <View style={styles.ranksCardList}>
           {remainder.length === 0 && top3.length === 0 ? (
-            <View style={styles.emptyRanks}>
+            <GlassCard borderRadius="2xl" style={styles.emptyRanks}>
               <Award size={24} color={colors.textTertiary} />
               <Text variant="caption" color={colors.textTertiary} style={{ marginTop: 6 }}>
                 Compete daily to register rankings!
               </Text>
-            </View>
+            </GlassCard>
           ) : (
             remainder.map((item, idx) => (
               <StaggeredRankRow
@@ -296,7 +360,7 @@ export default function LeaderboardScreen() {
               />
             ))
           )}
-        </GlassCard>
+        </View>
         <Spacer size="5xl" />
       </ScrollView>
     </View>
@@ -309,8 +373,14 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 16,
     borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  },
+  headerLeftCol: {
+    gap: 2,
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -319,13 +389,14 @@ const styles = StyleSheet.create({
   scopeSwitcher: {
     flexDirection: 'row',
     padding: 4,
+    borderWidth: 1,
   },
   scopeBtn: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 9999,
+    borderRadius: radius.full,
   },
   podiumContainer: {
     flexDirection: 'row',
@@ -341,40 +412,54 @@ const styles = StyleSheet.create({
   },
   centerPillarWrapper: {
     zIndex: 10,
-    transform: [{ scale: 1.05 }],
+    transform: [{ scale: 1.06 }],
   },
-  trophyIcon: {
-    marginBottom: 4,
+  avatarGlowHalo: {
+    ...Platform.select({
+      ios: {
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+      },
+    }),
   },
   podiumPillar: {
     width: '90%',
-    borderTopWidth: 3,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
+    borderTopWidth: 2,
+    borderTopLeftRadius: radius.md,
+    borderTopRightRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
+    borderWidth: 1,
+  },
+  podiumNumber: {
+    fontSize: 28,
   },
   emptyPodium: {
     padding: 32,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
   },
-  ranksCard: {
-    overflow: 'hidden',
+  ranksCardList: {
+    gap: 8,
   },
   emptyRanks: {
     padding: 32,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
   },
-  rankRow: {
+  rankRowCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
+    paddingVertical: 12,
+    borderWidth: 1,
   },
   rankRowLeft: {
     flexDirection: 'row',
@@ -382,15 +467,24 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   rankNum: {
-    width: 24,
+    fontSize: 14,
     textAlign: 'center',
   },
   rankInfo: {
     justifyContent: 'center',
   },
   rankRowRight: {
-    alignItems: 'flex-end',
-    gap: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  statBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: radius.sm,
+    gap: 4,
   },
   ambientOrb: {
     position: 'absolute',
@@ -399,22 +493,25 @@ const styles = StyleSheet.create({
   rankBadgeCell: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 4,
     width: 32,
     justifyContent: 'center',
   },
-  streakPillRow: {
-    marginTop: 2,
-  },
   podiumName: {
-    fontSize: 12,
-    fontWeight: '700',
-    marginTop: 2,
+    fontSize: 11,
+    fontWeight: '800',
+    marginTop: 4,
+    letterSpacing: -0.2,
   },
   crownIcon: {
-    marginBottom: -2,
-    shadowColor: '#FFD700',
-    shadowOpacity: 0.5,
-    shadowRadius: 4,
+    marginBottom: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#FFD700',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.6,
+        shadowRadius: 4,
+      },
+    }),
   },
 });

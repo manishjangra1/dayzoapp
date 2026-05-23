@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { View, Modal, Pressable, StyleSheet } from 'react-native';
-import { X, Flame, Award, Zap, Trophy, Sparkles } from 'lucide-react-native';
+import { View, Modal, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { X, Flame, Award, Zap, Trophy, Sparkles, CheckCircle2, XCircle } from 'lucide-react-native';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,6 +13,12 @@ import { AnimatedButton } from '../design-system/primitives/AnimatedButton';
 import { radius } from '../design-system/tokens/radius';
 import { LinearGradient } from 'expo-linear-gradient';
 
+interface ShareChallenge {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
 interface ShareCardProps {
   visible: boolean;
   onClose: () => void;
@@ -20,7 +26,7 @@ interface ShareCardProps {
   streak: number;
   xp: number;
   levelTitle: string;
-  challengeTitle: string;
+  challenges: ShareChallenge[];
 }
 
 const themeColors = {
@@ -63,7 +69,7 @@ export default function ShareCard({
   streak,
   xp,
   levelTitle,
-  challengeTitle,
+  challenges = [],
 }: ShareCardProps) {
   const { isDark } = useTheme();
   const dialog = useDialog();
@@ -72,7 +78,7 @@ export default function ShareCard({
 
   // Customizer States
   const [themeName, setThemeName] = useState<keyof typeof themeColors>('premium');
-  const [layoutType, setLayoutType] = useState<'cinematic' | 'minimalist' | 'flame'>('cinematic');
+  const [layoutType, setLayoutType] = useState<'cinematic' | 'minimalist' | 'flame' | 'modern' | 'glass'>('cinematic');
   const [cardFormat, setCardFormat] = useState<'story' | 'square'>('story');
 
   const activeTheme = themeColors[themeName];
@@ -196,7 +202,7 @@ export default function ShareCard({
               ]}
             />
 
-            <View style={[styles.cardContent, { padding: cardFormat === 'square' ? 20 : 28 }]}>
+            <View style={[styles.cardContent, { padding: cardFormat === 'square' ? 16 : 28 }]}>
               {/* Card Top: Branding */}
               <View style={styles.cardHeader}>
                 <View>
@@ -217,70 +223,91 @@ export default function ShareCard({
               {/* Card Center: Dynamic Layout Templates */}
               {layoutType === 'cinematic' && (
                 <View style={styles.cardCenter}>
-                  <View style={[styles.badgeHalo, { borderColor: activeTheme.accentColor + '40' }]}>
-                    <View style={[styles.badgeInner, { backgroundColor: 'rgba(0,0,0,0.3)', borderColor: activeTheme.accentColor }]}>
-                      <Trophy color={activeTheme.accentColor} size={cardFormat === 'square' ? 32 : 42} />
-                    </View>
-                  </View>
-                  <Spacer size="sm" />
                   <View style={[styles.questCapsule, { backgroundColor: 'rgba(0,0,0,0.25)', borderColor: 'rgba(255,255,255,0.1)' }]}>
                     <Sparkles size={10} color={activeTheme.accentColor} style={{ marginRight: 4 }} />
                     <Text variant="micro" weight="bold" color={activeTheme.textColor} style={{ letterSpacing: 1.5 }}>
-                      DAILY QUEST CONQUERED
+                      DAILY QUEST CHECKLIST
                     </Text>
                   </View>
                   <Spacer size="sm" />
-                  <Text
-                    variant="h1"
-                    weight="display"
-                    color={activeTheme.textColor}
-                    align="center"
-                    style={[
-                      styles.challengeText,
-                      cardFormat === 'square' && { fontSize: 24, lineHeight: 28 }
-                    ]}
-                  >
-                    {challengeTitle.toUpperCase()}
-                  </Text>
+                  <View style={styles.checklistContainer}>
+                    {challenges.map((c, i) => (
+                      <View
+                        key={c.id || i}
+                        style={[
+                          styles.checklistItem,
+                          {
+                            paddingVertical: cardFormat === 'square' ? 3 : 5,
+                          }
+                        ]}
+                      >
+                        <View style={styles.checkIconWrapper}>
+                          {c.completed ? (
+                            <CheckCircle2 color={activeTheme.accentColor} fill={activeTheme.accentColor + '20'} size={cardFormat === 'square' ? 16 : 18} />
+                          ) : (
+                            <XCircle color="rgba(255,255,255,0.3)" size={cardFormat === 'square' ? 16 : 18} />
+                          )}
+                        </View>
+                        <Text
+                          variant="bodySmall"
+                          weight="bold"
+                          color={activeTheme.textColor}
+                          numberOfLines={1}
+                          style={[
+                            styles.checklistText,
+                            !c.completed && { opacity: 0.5 },
+                            cardFormat === 'square' && { fontSize: 11, lineHeight: 14 }
+                          ]}
+                        >
+                          {c.title}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
                 </View>
               )}
 
               {layoutType === 'minimalist' && (
                 <View style={styles.cardCenter}>
                   <Text variant="micro" weight="bold" color={activeTheme.accentColor} style={{ letterSpacing: 3 }}>
-                    THE SECURED RITUAL
+                    THE SECURED RITUALS
                   </Text>
-                  <Spacer size="sm" />
-                  <Text variant="hero" color={activeTheme.textColor} align="center" style={styles.quoteMark}>
-                    “
-                  </Text>
-                  <Text
-                    variant="h2"
-                    weight="bold"
-                    color={activeTheme.textColor}
-                    align="center"
-                    style={[
-                      styles.minimalistTitle,
-                      cardFormat === 'square' && { fontSize: 18, lineHeight: 22 }
-                    ]}
-                  >
-                    {challengeTitle}
-                  </Text>
-                  <Text variant="hero" color={activeTheme.textColor} align="center" style={styles.quoteMark}>
-                    ”
-                  </Text>
+                  <Spacer size="md" />
+                  <View style={{ width: '100%', gap: cardFormat === 'square' ? 8 : 12 }}>
+                    {challenges.map((c, i) => (
+                      <View key={c.id || i} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                        {c.completed ? (
+                          <CheckCircle2 color={activeTheme.accentColor} size={cardFormat === 'square' ? 14 : 16} />
+                        ) : (
+                          <XCircle color="rgba(255,255,255,0.3)" size={cardFormat === 'square' ? 14 : 16} />
+                        )}
+                        <Text
+                          variant="caption"
+                          weight="bold"
+                          color={activeTheme.textColor}
+                          style={[
+                            !c.completed && { opacity: 0.5 },
+                            cardFormat === 'square' && { fontSize: 11 }
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {c.title}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
                 </View>
               )}
 
               {layoutType === 'flame' && (
                 <View style={styles.cardCenter}>
-                  <View style={[styles.badgeHalo, { borderColor: 'rgba(255,255,255,0.15)' }]}>
-                    <View style={[styles.badgeInner, { backgroundColor: 'rgba(0,0,0,0.3)', borderColor: activeTheme.accentColor }]}>
-                      <Flame color={activeTheme.accentColor} fill={activeTheme.accentColor} size={cardFormat === 'square' ? 36 : 46} />
+                  <View style={[styles.badgeHalo, { borderColor: 'rgba(255,255,255,0.15)', width: 56, height: 56, borderRadius: 28 }]}>
+                    <View style={[styles.badgeInner, { backgroundColor: 'rgba(0,0,0,0.3)', borderColor: activeTheme.accentColor, width: 44, height: 44, borderRadius: 22 }]}>
+                      <Flame color={activeTheme.accentColor} fill={activeTheme.accentColor} size={18} />
                     </View>
                   </View>
-                  <Spacer size="sm" />
-                  <Text variant="caption" weight="bold" color={activeTheme.textColor} style={{ letterSpacing: 2, opacity: 0.8 }}>
+                  <Spacer size="xs" />
+                  <Text variant="caption" weight="bold" color={activeTheme.textColor} style={{ letterSpacing: 1.5, opacity: 0.8, fontSize: 9 }}>
                     MOMENTUM MULTIPLIER
                   </Text>
                   <Spacer size="xs" />
@@ -291,14 +318,102 @@ export default function ShareCard({
                     align="center"
                     style={[
                       styles.streakNumberText,
-                      cardFormat === 'square' && { fontSize: 36, lineHeight: 40 }
+                      { fontSize: cardFormat === 'square' ? 22 : 30, lineHeight: cardFormat === 'square' ? 26 : 34 }
                     ]}
                   >
                     {streak} DAY STREAK
                   </Text>
-                  <Text variant="micro" weight="bold" color={activeTheme.accentColor} style={{ letterSpacing: 1.5 }}>
-                    UNSTOPPABLE EMPIRE
-                  </Text>
+                  <Spacer size="xs" />
+                  <View style={{ width: '100%', gap: cardFormat === 'square' ? 2 : 3, opacity: 0.9, marginTop: 4 }}>
+                    {challenges.map((c, i) => (
+                      <View key={c.id || i} style={styles.miniChecklistItem}>
+                        {c.completed ? (
+                          <CheckCircle2 color="#00F260" size={cardFormat === 'square' ? 10 : 12} />
+                        ) : (
+                          <XCircle color="rgba(255,255,255,0.3)" size={cardFormat === 'square' ? 10 : 12} />
+                        )}
+                        <Text
+                          variant="micro"
+                          weight="bold"
+                          color={activeTheme.textColor}
+                          numberOfLines={1}
+                          style={[
+                            { flex: 1, fontSize: cardFormat === 'square' ? 9 : 11 },
+                            !c.completed && { opacity: 0.5 }
+                          ]}
+                        >
+                          {c.title}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {layoutType === 'modern' && (
+                <View style={styles.cardCenter}>
+                  <View style={[styles.questCapsule, { backgroundColor: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.2)' }]}>
+                    <Sparkles size={10} color={activeTheme.accentColor} style={{ marginRight: 4 }} />
+                    <Text variant="micro" weight="bold" color={activeTheme.textColor} style={{ letterSpacing: 1.5 }}>
+                      MODERN TARGETS
+                    </Text>
+                  </View>
+                  <Spacer size="sm" />
+                  <View style={styles.checklistContainer}>
+                    {challenges.map((c, i) => (
+                      <View
+                        key={c.id || i}
+                        style={[
+                          styles.checklistItem,
+                          {
+                            paddingVertical: cardFormat === 'square' ? 3 : 5,
+                          }
+                        ]}
+                      >
+                        <View style={styles.checkIconWrapper}>
+                          {c.completed ? (
+                            <CheckCircle2 color="#00F260" size={cardFormat === 'square' ? 14 : 16} />
+                          ) : (
+                            <XCircle color="rgba(255,255,255,0.3)" size={cardFormat === 'square' ? 14 : 16} />
+                          )}
+                        </View>
+                        <Text
+                          variant="caption"
+                          weight="bold"
+                          color={activeTheme.textColor}
+                          numberOfLines={1}
+                          style={[{ flex: 1 }, !c.completed && { opacity: 0.5 }]}
+                        >
+                          {c.title}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {layoutType === 'glass' && (
+                <View style={styles.cardCenter}>
+                  <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', borderRadius: 16, padding: cardFormat === 'square' ? 10 : 16, width: '100%', borderColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 1 }}>
+                    <Text variant="micro" weight="bold" color={activeTheme.textColor} align="center" style={{ letterSpacing: 2 }}>
+                      GLASS SECURED RITUALS
+                    </Text>
+                    <Spacer size="xs" />
+                    <View style={{ gap: cardFormat === 'square' ? 3 : 5 }}>
+                      {challenges.map((c, i) => (
+                        <View key={c.id || i} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          {c.completed ? (
+                            <CheckCircle2 color={activeTheme.accentColor} size={cardFormat === 'square' ? 12 : 14} />
+                          ) : (
+                            <XCircle color="rgba(255,255,255,0.2)" size={cardFormat === 'square' ? 12 : 14} />
+                          )}
+                          <Text variant="caption" weight="bold" color={activeTheme.textColor} numberOfLines={1} style={[{ flex: 1 }, !c.completed && { opacity: 0.4 }]}>
+                            {c.title}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
                 </View>
               )}
 
@@ -319,7 +434,7 @@ export default function ShareCard({
                     <Zap color={activeTheme.accentColor} size={14} style={{ marginRight: 4 }} />
                     <Text variant="bodySmall" weight="bold" color={activeTheme.textColor}>+{xp}</Text>
                   </View>
-                  <Text variant="micro" weight="bold" color={activeTheme.textColor} style={{ opacity: 0.6 }}>XP SECURED</Text>
+                  <Text variant="micro" weight="bold" color={activeTheme.textColor} style={{ opacity: 0.6 }}>XP</Text>
                 </View>
 
                 <View style={styles.metricsDivider} />
@@ -329,7 +444,7 @@ export default function ShareCard({
                     <Award color={activeTheme.accentColor} size={14} style={{ marginRight: 4 }} />
                     <Text variant="bodySmall" weight="bold" color={activeTheme.textColor} numberOfLines={1}>{levelTitle}</Text>
                   </View>
-                  <Text variant="micro" weight="bold" color={activeTheme.textColor} style={{ opacity: 0.6 }}>GUILD LEVEL</Text>
+                  <Text variant="micro" weight="bold" color={activeTheme.textColor} style={{ opacity: 0.6 }}>LEVEL</Text>
                 </View>
               </View>
 
@@ -373,8 +488,12 @@ export default function ShareCard({
             <Text variant="micro" weight="bold" color={isDark ? '#9CA3AF' : '#4B5563'} style={{ width: 64 }}>
               STYLE
             </Text>
-            <View style={styles.pillRow}>
-              {(['cinematic', 'minimalist', 'flame'] as const).map((type) => (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.scrollPillRow}
+            >
+              {(['cinematic', 'minimalist', 'flame', 'modern', 'glass'] as const).map((type) => (
                 <Pressable
                   key={type}
                   onPress={() => setLayoutType(type)}
@@ -383,6 +502,8 @@ export default function ShareCard({
                     {
                       backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
                       borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+                      paddingHorizontal: 16,
+                      marginRight: 8,
                     },
                     layoutType === type && {
                       backgroundColor: activeTheme.gradient[0],
@@ -399,7 +520,7 @@ export default function ShareCard({
                   </Text>
                 </Pressable>
               ))}
-            </View>
+            </ScrollView>
           </View>
 
           {/* Format selector */}
@@ -529,6 +650,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
   },
   badgeHalo: {
     width: 84,
@@ -554,6 +676,34 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
+  },
+  checklistContainer: {
+    width: '100%',
+    gap: 2,
+    marginTop: 6,
+  },
+  checklistItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    gap: 12,
+    width: '100%',
+  },
+  checkIconWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checklistText: {
+    fontSize: 13,
+    lineHeight: 16,
+    flex: 1,
+  },
+  miniChecklistItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    width: '100%',
+    paddingHorizontal: 8,
   },
   challengeText: {
     fontSize: 28,
@@ -627,6 +777,11 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
     borderWidth: 2.5,
     transform: [{ scale: 1.15 }],
+  },
+  scrollPillRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 2,
   },
   pillRow: {
     flexDirection: 'row',
