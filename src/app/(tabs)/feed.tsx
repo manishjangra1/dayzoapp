@@ -21,6 +21,7 @@ import Animated, {
   withTiming,
   withSequence,
   withDelay,
+  runOnJS,
 } from 'react-native-reanimated';
 
 interface FeedComment {
@@ -63,8 +64,10 @@ const FloatingEmoji = ({ emoji, onComplete }: { emoji: string; onComplete: () =>
   useEffect(() => {
     translateY.value = withTiming(-120, { duration: 1200 });
     opacity.value = withTiming(0, { duration: 1200 });
-    scale.value = withSpring(1.5, { damping: 8, stiffness: 120 }, () => {
-      onComplete();
+    scale.value = withSpring(1.5, { damping: 8, stiffness: 120 }, (finished) => {
+      if (finished) {
+        runOnJS(onComplete)();
+      }
     });
   }, []);
 
