@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, ActivityIndicator, StyleSheet, ViewStyle, StyleProp } from 'react-native';
+import { Pressable, ActivityIndicator, StyleSheet, ViewStyle, StyleProp, View } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -20,6 +20,7 @@ export interface AnimatedButtonProps {
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
   borderRadius?: keyof typeof radius;
+  icon?: React.ReactNode;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -32,6 +33,7 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
   disabled = false,
   style,
   borderRadius = 'md',
+  icon,
 }) => {
   const { colors } = useTheme();
   const scale = useSharedValue(1);
@@ -120,13 +122,16 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
       {loading ? (
         <ActivityIndicator size="small" color={currentStyles.text} />
       ) : (
-        <Text
-          variant="body"
-          weight="bold"
-          color={currentStyles.text}
-        >
-          {title}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+          {icon}
+          <Text
+            variant="body"
+            weight="bold"
+            color={currentStyles.text}
+          >
+            {title}
+          </Text>
+        </View>
       )}
     </AnimatedPressable>
   );

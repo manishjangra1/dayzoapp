@@ -1,6 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Award, LogOut, Moon, Sparkles } from 'lucide-react-native';
+import React, { useCallback } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { UserAvatar } from '../../components/common/UserAvatar';
@@ -19,6 +20,20 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { user, clearAuth, updateUser } = useAuthStore();
   const dialog = useDialog();
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchLatestProfile = async () => {
+        try {
+          const res = await api.get('/users/profile');
+          updateUser(res.data);
+        } catch (e) {
+          console.warn('Failed to fetch latest user profile:', e);
+        }
+      };
+      fetchLatestProfile();
+    }, [])
+  );
 
   const handleEditBio = () => {
     let localBio = user?.bio || '';
@@ -96,10 +111,10 @@ export default function ProfileScreen() {
     });
   };
 
-  // Mock 30-day consistency heatmap indices
-  const heatmapData = Array.from({ length: 28 }, (_, i) => ({
+  // Real 28-day consistency heatmap data from user profile (fallback to empty blocks)
+  const heatmapData = user?.heatmapData || Array.from({ length: 28 }, (_, i) => ({
     day: i + 1,
-    completed: i % 3 !== 0 && i % 7 !== 0,
+    completed: false,
   }));
 
   return (

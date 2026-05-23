@@ -340,27 +340,12 @@ export default function SocialFeedScreen() {
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery]);
 
-  // Staggered Entry Card Component
-  const StaggeredCard = ({ item, index }: { item: FeedItem; index: number }) => {
-    const fadeVal = useSharedValue(0);
-    const slideVal = useSharedValue(24);
-
-    useEffect(() => {
-      fadeVal.value = withDelay(index * 100, withTiming(1, { duration: 400 }));
-      slideVal.value = withDelay(index * 100, withSpring(0, { damping: 14, stiffness: 120 }));
-    }, [index]);
-
-    const animatedStyle = useAnimatedStyle(() => {
-      return {
-        opacity: fadeVal.value,
-        transform: [{ translateY: slideVal.value }],
-      };
-    });
-
+  // Feed Card Component (Static and performant, without entry spring animations)
+  const FeedCard = ({ item }: { item: FeedItem }) => {
     const isHighStreakWin = item.user.streak > 0 && item.user.streak % 5 === 0;
 
     return (
-      <Animated.View style={animatedStyle}>
+      <View>
         <GlassCard
           borderRadius="2xl"
           intensity="high"
@@ -506,7 +491,7 @@ export default function SocialFeedScreen() {
             </View>
           </View>
         </GlassCard>
-      </Animated.View>
+      </View>
     );
   };
 
@@ -654,8 +639,8 @@ export default function SocialFeedScreen() {
               </Text>
             </GlassCard>
           ) : (
-            socialFeed.map((item, idx) => (
-              <StaggeredCard key={item.id} item={item} index={idx} />
+            socialFeed.map((item) => (
+              <FeedCard key={item.id} item={item} />
             ))
           )}
           <Spacer size="5xl" />

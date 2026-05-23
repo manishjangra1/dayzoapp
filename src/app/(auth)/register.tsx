@@ -67,10 +67,10 @@ export default function RegisterScreen() {
         {/* App Logo */}
         <View style={styles.logoWrapper}>
           <Flame size={48} color="#FF4B2B" fill="#FF4B2B" />
-          <Text variant="hero" weight="display" color={colors.text} style={styles.logoText}>
+          <Text variant="hero" weight="display" color="#FFFFFF" style={styles.logoText}>
             Dayzo
           </Text>
-          <Text variant="bodySmall" color={colors.textSecondary} style={styles.subtitle}>
+          <Text variant="bodySmall" color="rgba(255, 255, 255, 0.6)" style={styles.subtitle}>
             Build atomic consistency together.
           </Text>
         </View>
@@ -78,58 +78,58 @@ export default function RegisterScreen() {
         <Spacer size="xl" />
 
         {/* Form Card */}
-        <GlassCard borderRadius="2xl" style={styles.card}>
-          <Text variant="h3" weight="bold" color={colors.text}>
+        <GlassCard borderRadius="2xl" style={[styles.card, { backgroundColor: 'rgba(20, 20, 26, 0.65)', borderColor: 'rgba(255, 255, 255, 0.12)' }]}>
+          <Text variant="h3" weight="bold" color="#FFFFFF">
             Join the Ecosystem
           </Text>
-          <Text variant="caption" color={colors.textSecondary}>
+          <Text variant="caption" color="rgba(255, 255, 255, 0.5)">
             Create your account to start your self-improvement track
           </Text>
 
           <Spacer size="lg" />
 
           {/* Email input field */}
-          <View style={[styles.inputContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)', borderColor: colors.border }]}>
-            <Mail size={18} color={colors.textSecondary} style={styles.inputIcon} />
+          <View style={[styles.inputContainer, { backgroundColor: 'rgba(255, 255, 255, 0.03)', borderColor: 'rgba(255, 255, 255, 0.1)' }]}>
+            <Mail size={18} color="rgba(255, 255, 255, 0.6)" style={styles.inputIcon} />
             <TextInput
               placeholder="Email Address"
-              placeholderTextColor={colors.textTertiary}
+              placeholderTextColor="rgba(255, 255, 255, 0.4)"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
-              style={[styles.input, { color: colors.text }]}
+              style={[styles.input, { color: '#FFFFFF' }]}
             />
           </View>
 
           <Spacer size="md" />
 
           {/* Username input field */}
-          <View style={[styles.inputContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)', borderColor: colors.border }]}>
-            <User size={18} color={colors.textSecondary} style={styles.inputIcon} />
+          <View style={[styles.inputContainer, { backgroundColor: 'rgba(255, 255, 255, 0.03)', borderColor: 'rgba(255, 255, 255, 0.1)' }]}>
+            <User size={18} color="rgba(255, 255, 255, 0.6)" style={styles.inputIcon} />
             <TextInput
               placeholder="Pick a Username"
-              placeholderTextColor={colors.textTertiary}
+              placeholderTextColor="rgba(255, 255, 255, 0.4)"
               value={username}
               onChangeText={setUsername}
               autoCapitalize="none"
-              style={[styles.input, { color: colors.text }]}
+              style={[styles.input, { color: '#FFFFFF' }]}
             />
           </View>
 
           <Spacer size="md" />
 
           {/* Password input field */}
-          <View style={[styles.inputContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)', borderColor: colors.border }]}>
-            <Lock size={18} color={colors.textSecondary} style={styles.inputIcon} />
+          <View style={[styles.inputContainer, { backgroundColor: 'rgba(255, 255, 255, 0.03)', borderColor: 'rgba(255, 255, 255, 0.1)' }]}>
+            <Lock size={18} color="rgba(255, 255, 255, 0.6)" style={styles.inputIcon} />
             <TextInput
               placeholder="Create Password"
-              placeholderTextColor={colors.textTertiary}
+              placeholderTextColor="rgba(255, 255, 255, 0.4)"
               value={password}
               onChangeText={setPassword}
               secureTextEntry
               autoCapitalize="none"
-              style={[styles.input, { color: colors.text }]}
+              style={[styles.input, { color: '#FFFFFF' }]}
             />
           </View>
 
@@ -147,11 +147,11 @@ export default function RegisterScreen() {
 
         {/* Navigation back to login */}
         <View style={styles.footer}>
-          <Text variant="bodySmall" color={colors.textSecondary}>
+          <Text variant="bodySmall" color="rgba(255, 255, 255, 0.6)">
             Already have an account?{' '}
           </Text>
           <Pressable onPress={() => router.push('/(auth)/login')}>
-            <Text variant="bodySmall" weight="bold" color={colors.primary}>
+            <Text variant="bodySmall" weight="bold" color="#FF4B2B">
               Log In
             </Text>
           </Pressable>

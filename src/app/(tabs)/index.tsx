@@ -14,7 +14,7 @@ import { StreakFlame } from '../../features/home/components/StreakFlame';
 import { XPRing } from '../../features/home/components/XPRing';
 import { ConsistencyMeter } from '../../features/home/components/ConsistencyMeter';
 import { MotivationBanner } from '../../features/home/components/MotivationBanner';
-import { ChallengeCard } from '../../features/home/components/ChallengeCard';
+import { DailyChallengesCard } from '../../features/home/components/DailyChallengesCard';
 import { UserAvatar } from '../../components/common/UserAvatar';
 import ShareCard from '../../components/ShareCard';
 import { radius } from '../../design-system/tokens/radius';
@@ -299,22 +299,18 @@ export default function HomeScreen() {
               Today's Challenges
             </Text>
             <Text variant="micro" weight="bold" color={colors.textSecondary} style={{ letterSpacing: 0.5 }}>
-              5 QUESTS ACTIVE • ROTATES EVERY 24 HOURS
+              5 Challenges ACTIVE • ROTATES EVERY 24 HOURS
             </Text>
           </View>
         </View>
 
         {todayChallenges && todayChallenges.length > 0 ? (
-          todayChallenges.map((chall: any) => (
-            <ChallengeCard
-              key={chall.id}
-              challenge={chall}
-              completed={chall.completed}
-              onComplete={() => triggerCompleteChallengeWithProof(chall.id)}
-              actionLoading={actionLoading}
-              onShare={() => setShareVisible(true)}
-            />
-          ))
+          <DailyChallengesCard
+            challenges={todayChallenges}
+            onComplete={triggerCompleteChallengeWithProof}
+            actionLoading={actionLoading}
+            onShare={() => setShareVisible(true)}
+          />
         ) : (
           <GlassCard borderRadius="2xl" style={styles.emptyCard}>
             <Compass size={32} color={colors.textTertiary} style={{ opacity: 0.4, marginBottom: 8 }} />

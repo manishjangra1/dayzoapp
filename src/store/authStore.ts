@@ -16,6 +16,7 @@ export interface User {
   title: string;
   totalCompletions?: number;
   badges?: Array<{ id: string; title: string; icon: string; description: string }>;
+  heatmapData?: Array<{ day: number; date: string; completed: boolean }>;
 }
 
 interface AuthState {
