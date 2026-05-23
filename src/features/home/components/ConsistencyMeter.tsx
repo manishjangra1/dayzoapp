@@ -1,16 +1,16 @@
 import React from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet, Dimensions, Platform, Pressable } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
-import { Check } from 'lucide-react-native';
+import { Check, Flame } from 'lucide-react-native';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { Text } from '../../../design-system/primitives/Text';
 import { Surface } from '../../../design-system/primitives/Surface';
 import { radius } from '../../../design-system/tokens/radius';
-import { spacing } from '../../../design-system/tokens/spacing';
+import { GlassCard } from '../../../design-system/primitives/GlassCard';
 
 interface DayItem {
   dayName: string;
@@ -35,85 +35,112 @@ const DEFAULT_DAYS: DayItem[] = [
 export const ConsistencyMeter: React.FC<ConsistencyMeterProps> = ({
   days = DEFAULT_DAYS,
 }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   // Calculate consistency percentage
   const completedCount = days.filter((d) => d.completed).length;
   const percentage = Math.round((completedCount / days.length) * 100);
 
+  const DayCapsule = ({ day }: { day: DayItem }) => {
+    const scale = useSharedValue(1);
+
+    const handlePressIn = () => {
+      scale.value = withSpring(0.88, { damping: 10, stiffness: 200 });
+    };
+
+    const handlePressOut = () => {
+      scale.value = withSpring(1, { damping: 12, stiffness: 150 });
+    };
+
+    const animatedStyle = useAnimatedStyle(() => {
+      return {
+        transform: [{ scale: scale.value }],
+      };
+    });
+
+    return (
+      <Animated.View style={[animatedStyle, styles.dayCol]}>
+        <Pressable
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          style={[
+            styles.dotContainer,
+            {
+              borderColor: day.isToday
+                ? colors.primary
+                : day.completed
+                ? 'rgba(52, 211, 153, 0.4)'
+                : isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+              backgroundColor: day.completed
+                ? 'rgba(52, 211, 153, 0.15)'
+                : day.isToday
+                ? isDark ? 'rgba(255, 75, 43, 0.15)' : 'rgba(255, 75, 43, 0.08)'
+                : isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+            },
+            day.isToday && styles.todayGlow,
+          ]}
+        >
+          {day.completed ? (
+            <Check size={14} color="#34D399" strokeWidth={3.5} />
+          ) : (
+            <Text
+              variant="caption"
+              weight="bold"
+              color={day.isToday ? colors.primary : colors.textTertiary}
+            >
+              {day.dayName}
+            </Text>
+          )}
+        </Pressable>
+        {day.isToday && (
+          <View style={[styles.todayIndicator, { backgroundColor: colors.primary }]} />
+        )}
+      </Animated.View>
+    );
+  };
+
   return (
-    <Surface elevation="raised" borderRadius="xl" bordered style={styles.container}>
+    <GlassCard borderRadius="2xl" intensity="high" style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerTitleContainer}>
-          <Text variant="bodySmall" weight="bold" color={colors.textSecondary}>
-            Weekly Consistency
-          </Text>
-          <Text variant="caption" color={colors.textTertiary}>
-            Complete your challenge every day to protect your streak
+          <View style={styles.titleRow}>
+            <Flame size={16} color={colors.primary} fill={colors.primary} />
+            <Text variant="bodySmall" weight="bold" color={colors.text}>
+              Weekly Consistency
+            </Text>
+          </View>
+          <Text variant="caption" color={colors.textSecondary} style={{ marginTop: 2 }}>
+            Maintain atomic actions to power your streak
           </Text>
         </View>
-        <View style={[styles.percentBadge, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
-          <Text variant="caption" weight="bold" color={colors.success}>
+        <View style={[styles.percentBadge, { backgroundColor: 'rgba(52, 211, 153, 0.15)' }]}>
+          <Text variant="caption" weight="bold" color="#34D399">
             {percentage}%
           </Text>
         </View>
       </View>
 
       <View style={styles.grid}>
-        {days.map((day, idx) => {
-          return (
-            <View key={idx} style={styles.dayCol}>
-              <View
-                style={[
-                  styles.dotContainer,
-                  {
-                    borderColor: day.isToday
-                      ? colors.primary
-                      : day.completed
-                      ? colors.success
-                      : colors.border,
-                    backgroundColor: day.completed
-                      ? colors.success
-                      : day.isToday
-                      ? 'rgba(255, 75, 43, 0.05)'
-                      : colors.background,
-                  },
-                ]}
-              >
-                {day.completed ? (
-                  <Check size={14} color={colors.surface} strokeWidth={3} />
-                ) : (
-                  <Text
-                    variant="caption"
-                    weight="bold"
-                    color={day.isToday ? colors.primary : colors.textTertiary}
-                  >
-                    {day.dayName}
-                  </Text>
-                )}
-              </View>
-              {day.isToday && (
-                <View style={[styles.todayIndicator, { backgroundColor: colors.primary }]} />
-              )}
-            </View>
-          );
-        })}
+        {days.map((day, idx) => (
+          <DayCapsule key={idx} day={day} />
+        ))}
       </View>
-    </Surface>
+    </GlassCard>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
+    padding: 18,
     marginVertical: 8,
-    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 20,
     width: '100%',
   },
   headerTitleContainer: {
@@ -121,10 +148,15 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     marginRight: 12,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   percentBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: radius.xs,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.sm,
     flexShrink: 0,
   },
   grid: {
@@ -138,19 +170,29 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   dotContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 2,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  todayGlow: {
+    ...Platform.select({
+      ios: {
+        shadowColor: '#FF4B2B',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.45,
+        shadowRadius: 6,
+      },
+    }),
   },
   todayIndicator: {
     width: 4,
     height: 4,
     borderRadius: 2,
-    marginTop: 4,
+    marginTop: 6,
     position: 'absolute',
-    bottom: -8,
+    bottom: -10,
   },
 });

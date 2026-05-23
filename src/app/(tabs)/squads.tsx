@@ -1,18 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, ScrollView, Platform, TextInput, Clipboard, ActivityIndicator, Pressable, RefreshControl } from 'react-native';
-import { Award, ShieldAlert, Sparkles, Users, Lock, ChevronRight, Zap, Copy, LogOut, PlusCircle, UserCheck } from 'lucide-react-native';
+import { StyleSheet, View, ScrollView, TextInput, Clipboard, ActivityIndicator, Pressable, RefreshControl } from 'react-native';
+import { Award, Users, Zap, Copy, Target } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../services/api';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
 import { useDialog } from '../../design-system/theme/DialogProvider';
 import { Text } from '../../design-system/primitives/Text';
 import { GlassCard } from '../../design-system/primitives/GlassCard';
-import { Surface } from '../../design-system/primitives/Surface';
 import { Spacer } from '../../design-system/primitives/Spacer';
 import { AnimatedButton } from '../../design-system/primitives/AnimatedButton';
 import { UserAvatar } from '../../components/common/UserAvatar';
 import { radius } from '../../design-system/tokens/radius';
 import { StreakFlame } from '../../features/home/components/StreakFlame';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  withDelay,
+} from 'react-native-reanimated';
 
 interface SquadMember {
   id: string;
@@ -42,7 +49,6 @@ export default function SquadsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Forms state
   const [joinCode, setJoinCode] = useState('');
   const [squadName, setSquadName] = useState('');
   const [createLoading, setCreateLoading] = useState(false);
@@ -51,11 +57,9 @@ export default function SquadsScreen() {
 
   const fetchSquadDetails = async () => {
     try {
-      // 1. Fetch user's squad
       const resMySquad = await api.get('/squads/my-squad');
       setMySquad(resMySquad.data);
 
-      // 2. Fetch squad leaderboard
       const resLeaderboard = await api.get('/squads/leaderboard');
       setLeaderboard(resLeaderboard.data);
     } catch (e) {
@@ -188,10 +192,150 @@ export default function SquadsScreen() {
     }
   };
 
+  // Staggered member row component
+  const StaggeredMemberRow = ({ member, index, total }: { member: SquadMember; index: number; total: number }) => {
+    const fadeVal = useSharedValue(0);
+    const slideVal = useSharedValue(12);
+
+    useEffect(() => {
+      fadeVal.value = withDelay(index * 60, withTiming(1, { duration: 300 }));
+      slideVal.value = withDelay(index * 60, withSpring(0, { damping: 12, stiffness: 120 }));
+    }, [index]);
+
+    const animatedStyle = useAnimatedStyle(() => {
+      return {
+        opacity: fadeVal.value,
+        transform: [{ translateY: slideVal.value }],
+      };
+    });
+
+    // Deterministic mock daily complete status
+    const completedToday = member.xp % 3 === 0 || member.streak > 0;
+
+    return (
+      <Animated.View style={animatedStyle}>
+        <View
+          style={[
+            styles.memberRow,
+            index < total - 1 && { borderBottomColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' },
+          ]}
+        >
+          <View style={styles.memberLeft}>
+            <UserAvatar
+              uri={member.avatar}
+              username={member.username}
+              size="sm"
+              borderRankColor={completedToday ? '#34D399' : undefined}
+            />
+            <View style={styles.memberInfo}>
+              <View style={styles.memberNameRow}>
+                <Text variant="bodySmall" weight="bold" color={colors.text}>
+                  @{member.username}
+                </Text>
+                {completedToday && (
+                  <View style={styles.completeStatusDot} />
+                )}
+              </View>
+              <Text variant="micro" color={colors.textTertiary}>
+                Level {member.level}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.memberRight}>
+            <Text variant="bodySmall" weight="bold" color={colors.text}>
+              {member.xp} <Text variant="micro" color={colors.textTertiary}>XP</Text>
+            </Text>
+            {member.streak > 0 && <StreakFlame streak={member.streak} size={14} showText={true} />}
+          </View>
+        </View>
+      </Animated.View>
+    );
+  };
+
+  // Staggered leaderboard row component
+  const StaggeredLeaderboardRow = ({ squad, index, total }: { squad: any; index: number; total: number }) => {
+    const fadeVal = useSharedValue(0);
+    const slideVal = useSharedValue(12);
+
+    useEffect(() => {
+      fadeVal.value = withDelay(index * 60, withTiming(1, { duration: 300 }));
+      slideVal.value = withDelay(index * 60, withSpring(0, { damping: 12, stiffness: 120 }));
+    }, [index]);
+
+    const animatedStyle = useAnimatedStyle(() => {
+      return {
+        opacity: fadeVal.value,
+        transform: [{ translateY: slideVal.value }],
+      };
+    });
+
+    const isTopThree = index < 3;
+    const rankColors = ['#FBBF24', '#9CA3AF', '#CD7F32']; // Gold, Silver, Bronze
+
+    return (
+      <Animated.View style={animatedStyle}>
+        <View
+          style={[
+            styles.leaderboardRow,
+            index < total - 1 && { borderBottomColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' },
+          ]}
+        >
+          <View style={styles.leaderboardRowLeft}>
+            <Text
+              variant="bodySmall"
+              weight="bold"
+              color={isTopThree ? rankColors[index] : colors.textTertiary}
+              style={styles.rankNum}
+            >
+              {index + 1}
+            </Text>
+            <UserAvatar uri={squad.avatar} username={squad.name} size="sm" borderRankColor={isTopThree ? rankColors[index] : colors.accent} />
+            <View style={styles.rankInfo}>
+              <Text variant="bodySmall" weight="bold" color={colors.text}>
+                {squad.name}
+              </Text>
+              <Text variant="micro" color={colors.textTertiary}>
+                Alliance
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.leaderboardRowRight}>
+            <Text variant="bodySmall" weight="bold" color={colors.text}>
+              {squad.xp} <Text variant="micro" color={colors.textTertiary}>XP</Text>
+            </Text>
+          </View>
+        </View>
+      </Animated.View>
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      
+      {/* Background ambient linear mesh */}
+      <View style={StyleSheet.absoluteFill}>
+        <LinearGradient
+          colors={isDark ? ['#08080C', '#0E0E12'] : ['#F4F5F7', '#EBEFF3']}
+          style={StyleSheet.absoluteFill}
+        />
+        {isDark && (
+          <>
+            <LinearGradient
+              colors={['rgba(138, 35, 135, 0.05)', 'transparent']}
+              style={[styles.ambientOrb, { top: -60, right: -60, width: 280, height: 280 }]}
+            />
+            <LinearGradient
+              colors={['rgba(0, 242, 254, 0.05)', 'transparent']}
+              style={[styles.ambientOrb, { bottom: 120, left: -80, width: 340, height: 340 }]}
+            />
+          </>
+        )}
+      </View>
+
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8, borderColor: colors.borderSubtle }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 8, borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' }]}>
         <Text variant="h2" weight="bold" color={colors.text}>
           Squads
         </Text>
@@ -209,7 +353,7 @@ export default function SquadsScreen() {
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: 90 + insets.bottom }]}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
           }
@@ -217,10 +361,14 @@ export default function SquadsScreen() {
           <Spacer size="md" />
 
           {mySquad ? (
-            /* Active user squad layout */
             <View>
-              {/* Squad Header Card */}
-              <Surface elevation="raised" borderRadius="2xl" bordered style={styles.squadHeroCard}>
+              {/* Squad Header Glass Card */}
+              <GlassCard borderRadius="2xl" intensity="high" style={[styles.squadHeroCard, { borderColor: 'rgba(255,255,255,0.06)' }]}>
+                <LinearGradient
+                  colors={['rgba(0, 242, 254, 0.04)', 'transparent']}
+                  style={[StyleSheet.absoluteFill, { borderRadius: radius.xl }]}
+                />
+                
                 <View style={styles.heroRow}>
                   <UserAvatar uri={mySquad.avatar} username={mySquad.name} size="lg" borderRankColor={colors.accent} />
                   <View style={styles.heroDetails}>
@@ -232,11 +380,11 @@ export default function SquadsScreen() {
                     </Text>
                     <Spacer size="xs" />
                     <View style={styles.pillRow}>
-                      <Pressable onPress={copyToClipboard} style={[styles.actionPill, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
+                      <Pressable onPress={copyToClipboard} style={[styles.actionPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)', borderColor: colors.borderSubtle }]}>
                         <Copy size={11} color={colors.textSecondary} style={{ marginRight: 4 }} />
                         <Text variant="micro" weight="bold" color={colors.textSecondary}>Copy Code</Text>
                       </Pressable>
-                      <View style={[styles.memberCountPill, { backgroundColor: 'rgba(255, 75, 43, 0.1)' }]}>
+                      <View style={[styles.memberCountPill, { backgroundColor: 'rgba(255, 75, 43, 0.12)' }]}>
                         <Users size={11} color={colors.primary} style={{ marginRight: 4 }} />
                         <Text variant="micro" weight="bold" color={colors.primary}>{mySquad.members.length}/5 Members</Text>
                       </View>
@@ -245,7 +393,7 @@ export default function SquadsScreen() {
                 </View>
 
                 <Spacer size="lg" />
-                <View style={[styles.divider, { backgroundColor: colors.borderSubtle }]} />
+                <View style={[styles.divider, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }]} />
                 <Spacer size="md" />
 
                 <View style={styles.xpRow}>
@@ -260,47 +408,58 @@ export default function SquadsScreen() {
                     </Text>
                   </View>
                 </View>
-              </Surface>
+              </GlassCard>
 
               <Spacer size="lg" />
 
-              {/* Members List */}
+              {/* Weekly Alliance Mission Progress Hub */}
+              <Text variant="caption" weight="bold" color={colors.textTertiary} style={styles.sectionTitle}>
+                ACTIVE WEEKLY QUEST
+              </Text>
+              
+              <GlassCard borderRadius="2xl" style={[styles.allianceQuestCard, { borderColor: 'rgba(255,255,255,0.06)' }]}>
+                <View style={styles.questHeader}>
+                  <Target size={16} color={colors.accent} />
+                  <Text variant="bodySmall" weight="bold" color={colors.text}>
+                    Alliance Conquest Quest
+                  </Text>
+                </View>
+                <Text variant="caption" color={colors.textSecondary} style={{ marginTop: 2, lineHeight: 16 }}>
+                  Secured collectively: Compete to compile 350 XP as a team this week!
+                </Text>
+                <Spacer size="md" />
+                
+                {/* Alliance Quest Progress slider */}
+                <View style={styles.missionProgressRow}>
+                  <View style={styles.labelsRow}>
+                    <Text variant="micro" weight="bold" color={colors.textTertiary}>CURRENT ACCUMULATED</Text>
+                    <Text variant="micro" weight="bold" color={colors.accent}>82% COMPLETE</Text>
+                  </View>
+                  <View style={[styles.progressBarTrack, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' }]}>
+                    <View style={[styles.progressBarFull, { width: '82%', backgroundColor: colors.accent }]} />
+                  </View>
+                </View>
+              </GlassCard>
+
+              <Spacer size="lg" />
+
+              {/* Teammates List */}
               <Text variant="caption" weight="bold" color={colors.textTertiary} style={styles.sectionTitle}>
                 SQUAD TEAMMATES
               </Text>
 
-              <Surface elevation="raised" borderRadius="2xl" bordered style={styles.membersCard}>
+              <GlassCard borderRadius="2xl" style={[styles.membersCard, { borderColor: 'rgba(255,255,255,0.05)' }]}>
                 {mySquad.members
                   .sort((a, b) => b.xp - a.xp)
                   .map((member, index) => (
-                    <View
+                    <StaggeredMemberRow
                       key={member.id}
-                      style={[
-                        styles.memberRow,
-                        index < mySquad.members.length - 1 && { borderBottomColor: colors.borderSubtle },
-                      ]}
-                    >
-                      <View style={styles.memberLeft}>
-                        <UserAvatar uri={member.avatar} username={member.username} size="sm" />
-                        <View style={styles.memberInfo}>
-                          <Text variant="bodySmall" weight="bold" color={colors.text}>
-                            @{member.username}
-                          </Text>
-                          <Text variant="micro" color={colors.textTertiary}>
-                            Level {member.level}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <View style={styles.memberRight}>
-                        <Text variant="bodySmall" weight="bold" color={colors.text}>
-                          {member.xp} <Text variant="micro" color={colors.textTertiary}>XP</Text>
-                        </Text>
-                        {member.streak > 0 && <StreakFlame streak={member.streak} size={14} showText={true} />}
-                      </View>
-                    </View>
+                      member={member}
+                      index={index}
+                      total={mySquad.members.length}
+                    />
                   ))}
-              </Surface>
+              </GlassCard>
 
               <Spacer size="xl" />
 
@@ -316,26 +475,30 @@ export default function SquadsScreen() {
             /* Join or create squad layout */
             <View>
               {/* Feature Intro */}
-              <Surface elevation="raised" borderRadius="2xl" bordered style={styles.lockCard}>
-                <Users size={36} color={colors.primary} style={{ marginBottom: 12 }} />
+              <GlassCard borderRadius="2xl" style={[styles.lockCard, { borderColor: 'rgba(255,255,255,0.05)' }]}>
+                <LinearGradient
+                  colors={['rgba(255, 75, 43, 0.04)', 'transparent']}
+                  style={[StyleSheet.absoluteFill, { borderRadius: radius.xl }]}
+                />
+                <Users size={38} color={colors.primary} style={{ marginBottom: 12 }} />
                 <Text variant="h3" weight="bold" color={colors.text} align="center">
                   Form a Habit Alliance
                 </Text>
-                <Text variant="caption" color={colors.textSecondary} align="center" style={{ marginTop: 4, lineHeight: 16 }}>
+                <Text variant="caption" color={colors.textSecondary} align="center" style={{ marginTop: 6, lineHeight: 18 }}>
                   Create or join a cooperative squad of up to 5 friends. Build concurrent habit chains to boost XP multipliers up to 1.5x and rise on the alliances leaderboard!
                 </Text>
-              </Surface>
+              </GlassCard>
 
               <Spacer size="lg" />
 
               {/* Action panels */}
-              <GlassCard borderRadius="2xl" style={styles.actionCard}>
+              <GlassCard borderRadius="2xl" style={[styles.actionCard, { borderColor: 'rgba(255,255,255,0.05)' }]}>
                 {/* Join Squad */}
                 <Text variant="bodySmall" weight="bold" color={colors.text}>
                   Join Existing Alliance
                 </Text>
                 <Spacer size="xs" />
-                <View style={[styles.inputContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)', borderColor: colors.border }]}>
+                <View style={[styles.inputContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)', borderColor: colors.borderSubtle }]}>
                   <TextInput
                     placeholder="Enter 6-digit invite code (e.g. AX79Q1)"
                     placeholderTextColor={colors.textTertiary}
@@ -355,7 +518,7 @@ export default function SquadsScreen() {
                 />
 
                 <Spacer size="xl" />
-                <View style={[styles.cardDivider, { backgroundColor: colors.borderSubtle }]} />
+                <View style={[styles.cardDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }]} />
                 <Spacer size="xl" />
 
                 {/* Create Squad */}
@@ -363,7 +526,7 @@ export default function SquadsScreen() {
                   Create New Alliance
                 </Text>
                 <Spacer size="xs" />
-                <View style={[styles.inputContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)', borderColor: colors.border }]}>
+                <View style={[styles.inputContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)', borderColor: colors.borderSubtle }]}>
                   <TextInput
                     placeholder="Alliance Name (e.g. Streak Titans)"
                     placeholderTextColor={colors.textTertiary}
@@ -390,37 +553,15 @@ export default function SquadsScreen() {
             TOP ALLIANCES LEADERBOARD
           </Text>
 
-          <Surface elevation="raised" borderRadius="2xl" bordered style={styles.leaderboardCard}>
+          <GlassCard borderRadius="2xl" style={[styles.leaderboardCard, { borderColor: 'rgba(255,255,255,0.05)' }]}>
             {leaderboard.length > 0 ? (
               leaderboard.map((squad, index) => (
-                <View
+                <StaggeredLeaderboardRow
                   key={squad.id}
-                  style={[
-                    styles.leaderboardRow,
-                    index < leaderboard.length - 1 && { borderBottomColor: colors.borderSubtle },
-                  ]}
-                >
-                  <View style={styles.leaderboardRowLeft}>
-                    <Text variant="bodySmall" weight="bold" color={colors.textTertiary} style={styles.rankNum}>
-                      {index + 1}
-                    </Text>
-                    <UserAvatar uri={squad.avatar} username={squad.name} size="sm" borderRankColor={colors.accent} />
-                    <View style={styles.rankInfo}>
-                      <Text variant="bodySmall" weight="bold" color={colors.text}>
-                        {squad.name}
-                      </Text>
-                      <Text variant="micro" color={colors.textTertiary}>
-                        Alliance
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.leaderboardRowRight}>
-                    <Text variant="bodySmall" weight="bold" color={colors.text}>
-                      {squad.xp} <Text variant="micro" color={colors.textTertiary}>XP</Text>
-                    </Text>
-                  </View>
-                </View>
+                  squad={squad}
+                  index={index}
+                  total={leaderboard.length}
+                />
               ))
             ) : (
               <View style={styles.emptyLeaderboard}>
@@ -430,7 +571,7 @@ export default function SquadsScreen() {
                 </Text>
               </View>
             )}
-          </Surface>
+          </GlassCard>
 
           <Spacer size="5xl" />
         </ScrollView>
@@ -589,5 +730,48 @@ const styles = StyleSheet.create({
     padding: 32,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  ambientOrb: {
+    position: 'absolute',
+    borderRadius: 999,
+    opacity: 0.15,
+  },
+  allianceQuestCard: {
+    padding: 16,
+    overflow: 'hidden',
+  },
+  questHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  missionProgressRow: {
+    marginTop: 8,
+  },
+  labelsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  progressBarTrack: {
+    height: 6,
+    borderRadius: radius.full || 999,
+    overflow: 'hidden',
+  },
+  progressBarFull: {
+    height: '100%',
+    borderRadius: radius.full || 999,
+  },
+  memberNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  completeStatusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#34D399',
   },
 });

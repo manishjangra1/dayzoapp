@@ -16,24 +16,24 @@ const THEME_STORAGE_KEY = 'dayzo_user_theme';
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const systemColorScheme = useColorScheme();
-  const [theme, setThemeState] = useState<ThemeType>('dark'); // Default to dark premium theme
+  const [theme, setThemeState] = useState<ThemeType>('auto'); // Default to auto
 
   useEffect(() => {
     async function loadTheme() {
       try {
         if (Platform.OS !== 'web') {
           const savedTheme = await SecureStore.getItemAsync(THEME_STORAGE_KEY);
-          if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'amoled') {
-            setThemeState(savedTheme);
-          } else if (systemColorScheme) {
-            setThemeState(systemColorScheme === 'dark' ? 'dark' : 'light');
+          if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'auto') {
+            setThemeState(savedTheme as ThemeType);
+          } else {
+            setThemeState('auto');
           }
         } else {
           const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-          if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'amoled') {
-            setThemeState(savedTheme);
-          } else if (systemColorScheme) {
-            setThemeState(systemColorScheme === 'dark' ? 'dark' : 'light');
+          if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'auto') {
+            setThemeState(savedTheme as ThemeType);
+          } else {
+            setThemeState('auto');
           }
         }
       } catch (e) {
@@ -41,7 +41,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     }
     loadTheme();
-  }, [systemColorScheme]);
+  }, []);
 
   const setTheme = async (newTheme: ThemeType) => {
     try {
@@ -56,8 +56,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const activeColors = colors[theme] || colors.dark;
-  const isDark = theme === 'dark' || theme === 'amoled';
+  const resolvedTheme = theme === 'auto'
+    ? (systemColorScheme === 'dark' ? 'dark' : 'light')
+    : theme;
+
+  const activeColors = colors[resolvedTheme] || colors.dark;
+  const isDark = resolvedTheme === 'dark';
 
   return (
     <ThemeContext.Provider value={{ theme, colors: activeColors, isDark, setTheme }}>

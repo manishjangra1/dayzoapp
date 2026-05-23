@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, TextInput, Pressable, ScrollView, RefreshControl, Platform, ActivityIndicator, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Users, Plus, Zap, Heart, MessageSquare, Compass, Search, UserPlus, UserMinus, UserCheck, Send, Smile, X } from 'lucide-react-native';
+import { Users, Plus, Zap, Heart, MessageSquare, Compass, Search, UserPlus, UserMinus, UserCheck, Send, Smile, X, Sparkles } from 'lucide-react-native';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
@@ -13,6 +13,15 @@ import { AnimatedButton } from '../../design-system/primitives/AnimatedButton';
 import { Spacer } from '../../design-system/primitives/Spacer';
 import { UserAvatar } from '../../components/common/UserAvatar';
 import { radius } from '../../design-system/tokens/radius';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  withSequence,
+  withDelay,
+} from 'react-native-reanimated';
 
 interface FeedComment {
   id: string;
@@ -45,23 +54,51 @@ interface FeedItem {
   comments?: FeedComment[];
 }
 
+// Micro animated floating emoji component
+const FloatingEmoji = ({ emoji, onComplete }: { emoji: string; onComplete: () => void }) => {
+  const translateY = useSharedValue(0);
+  const opacity = useSharedValue(1);
+  const scale = useSharedValue(0.4);
+
+  useEffect(() => {
+    translateY.value = withTiming(-120, { duration: 1200 });
+    opacity.value = withTiming(0, { duration: 1200 });
+    scale.value = withSpring(1.5, { damping: 8, stiffness: 120 }, () => {
+      onComplete();
+    });
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateY: translateY.value }, { scale: scale.value }],
+      opacity: opacity.value,
+      position: 'absolute',
+      bottom: 24,
+      right: 32,
+      zIndex: 99,
+    };
+  });
+
+  return (
+    <Animated.View style={animatedStyle}>
+      <Text style={{ fontSize: 28 }}>{emoji}</Text>
+    </Animated.View>
+  );
+};
+
 export default function SocialFeedScreen() {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const dialog = useDialog();
 
-  // Navigation tabs: 'feed' | 'discover'
   const [activeTab, setActiveTab] = useState<'feed' | 'discover'>('feed');
-
-  // Feed Screen State
   const [socialFeed, setSocialFeed] = useState<FeedItem[]>([]);
   const [loadingFeed, setLoadingFeed] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
   const [submittingComment, setSubmittingComment] = useState<Record<string, boolean>>({});
 
-  // Discovery / Search State
   const [searchQuery, setSearchQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [searchUsers, setSearchUsers] = useState<any[]>([]);
@@ -69,11 +106,28 @@ export default function SocialFeedScreen() {
   const [friendInput, setFriendInput] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Friends Alliance Modal State
   const [friendsListVisible, setFriendsListVisible] = useState(false);
   const [activeFriends, setActiveFriends] = useState<any[]>([]);
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [fetchingFriends, setFetchingFriends] = useState(false);
+
+  // Floating reactions pool state mapped by card item id
+  const [floatingPool, setFloatingPool] = useState<Record<string, { id: string; emoji: string }[]>>({});
+
+  const triggerFloatingReaction = (itemId: string, emoji: string) => {
+    const rectId = Math.random().toString();
+    setFloatingPool((prev) => ({
+      ...prev,
+      [itemId]: [...(prev[itemId] || []), { id: rectId, emoji }],
+    }));
+  };
+
+  const removeFloatingReaction = (itemId: string, id: string) => {
+    setFloatingPool((prev) => ({
+      ...prev,
+      [itemId]: (prev[itemId] || []).filter((r) => r.id !== id),
+    }));
+  };
 
   const fetchSocialConnections = async () => {
     try {
@@ -199,18 +253,17 @@ export default function SocialFeedScreen() {
     }
   };
 
-  const handleSendReaction = async (targetUserId: string, emoji: string) => {
+  const handleSendReaction = async (targetUserId: string, itemId: string, emoji: string) => {
     try {
+      triggerFloatingReaction(itemId, emoji);
       await api.post('/social/react', {
         targetUserId,
         emoji,
       });
       
-      // Optimistic reaction updates
       setSocialFeed(
         socialFeed.map((item) => {
           if (item.user.id === targetUserId) {
-            // Filter out existing reactions by current user to avoid duplicates
             const filteredReactions = (item.reactions || []).filter(
               (r) => r.username !== user?.username
             );
@@ -238,7 +291,6 @@ export default function SocialFeedScreen() {
         content: content.trim(),
       });
 
-      // Update feed locally
       setSocialFeed(
         socialFeed.map((item) => {
           if (item.id === userChallengeId) {
@@ -251,7 +303,6 @@ export default function SocialFeedScreen() {
         })
       );
 
-      // Clear input
       setCommentInputs(prev => ({ ...prev, [userChallengeId]: '' }));
     } catch (e) {
       console.warn('Failed to post comment:', e);
@@ -289,10 +340,201 @@ export default function SocialFeedScreen() {
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery]);
 
+  // Staggered Entry Card Component
+  const StaggeredCard = ({ item, index }: { item: FeedItem; index: number }) => {
+    const fadeVal = useSharedValue(0);
+    const slideVal = useSharedValue(24);
+
+    useEffect(() => {
+      fadeVal.value = withDelay(index * 100, withTiming(1, { duration: 400 }));
+      slideVal.value = withDelay(index * 100, withSpring(0, { damping: 14, stiffness: 120 }));
+    }, [index]);
+
+    const animatedStyle = useAnimatedStyle(() => {
+      return {
+        opacity: fadeVal.value,
+        transform: [{ translateY: slideVal.value }],
+      };
+    });
+
+    const isHighStreakWin = item.user.streak > 0 && item.user.streak % 5 === 0;
+
+    return (
+      <Animated.View style={animatedStyle}>
+        <GlassCard
+          borderRadius="2xl"
+          intensity="high"
+          style={[
+            styles.feedCard,
+            {
+              borderColor: isHighStreakWin ? 'rgba(138, 35, 135, 0.35)' : 'rgba(255, 255, 255, 0.06)',
+            }
+          ]}
+        >
+          {/* Milestone Purple Overlay for high streaks */}
+          {isHighStreakWin && (
+            <LinearGradient
+              colors={['rgba(138, 35, 135, 0.05)', 'transparent']}
+              style={[StyleSheet.absoluteFill, { borderRadius: radius.xl }]}
+            />
+          )}
+
+          {/* Active Floating Reactions Render */}
+          {(floatingPool[item.id] || []).map((react) => (
+            <FloatingEmoji
+              key={react.id}
+              emoji={react.emoji}
+              onComplete={() => removeFloatingReaction(item.id, react.id)}
+            />
+          ))}
+
+          {/* Header */}
+          <View style={styles.cardHeader}>
+            <View style={styles.userInfo}>
+              <UserAvatar uri={item.user.avatar} username={item.user.username} size="sm" borderRankColor={isHighStreakWin ? colors.accent : colors.primary} />
+              <View>
+                <View style={styles.userTitleRow}>
+                  <Text variant="bodySmall" weight="bold" color={colors.text}>
+                    @{item.user.username}
+                  </Text>
+                  {isHighStreakWin && (
+                    <View style={[styles.milestoneBadge, { backgroundColor: colors.accent + '20' }]}>
+                      <Sparkles size={8} color={colors.accent} />
+                      <Text variant="micro" weight="bold" color={colors.accent}>FIRE WIN</Text>
+                    </View>
+                  )}
+                </View>
+                <Text variant="micro" color={colors.textTertiary}>
+                  Level {item.user.level || 1} • {item.user.streak || 0}🔥 Streak
+                </Text>
+              </View>
+            </View>
+            <View style={[styles.categoryBadge, { backgroundColor: isHighStreakWin ? colors.accent + '15' : colors.primary + '15' }]}>
+              <Text variant="micro" weight="bold" color={isHighStreakWin ? colors.accent : colors.primary}>
+                {item.challenge.category.toUpperCase()}
+              </Text>
+            </View>
+          </View>
+
+          {/* Quest complete detail */}
+          <Surface elevation="flat" borderRadius="lg" bordered style={[styles.completionBox, { backgroundColor: colors.surface }]}>
+            <Text variant="bodySmall" weight="bold" color={colors.text}>
+              Completed: {item.challenge.title}
+            </Text>
+            <Text variant="caption" color={colors.textSecondary} style={{ marginTop: 2, lineHeight: 18 }}>
+              {item.challenge.description}
+            </Text>
+          </Surface>
+
+          {/* Reactions Shelf */}
+          {item.reactions && item.reactions.length > 0 && (
+            <View style={styles.reactionsShelf}>
+              {item.reactions.slice(0, 4).map((react, rIdx) => (
+                <View key={rIdx} style={[styles.reactionPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)', borderColor: colors.borderSubtle }]}>
+                  <Text style={[styles.reactionText, { color: colors.textSecondary }]}>
+                    {react.emoji} <Text style={{ fontSize: 9 }}>@{react.username}</Text>
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          <View style={[styles.cardDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }]} />
+
+          {/* Action emoji row */}
+          <View style={styles.actionRow}>
+            <View style={styles.reactionButtons}>
+              {['🔥', '👏', '💪', '👑'].map((emoji) => (
+                <Pressable
+                  key={emoji}
+                  onPress={() => handleSendReaction(item.user.id, item.id, emoji)}
+                  style={({ pressed }) => [
+                    styles.emojiButton,
+                    {
+                      backgroundColor: pressed ? 'rgba(255, 75, 43, 0.08)' : isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                      borderColor: colors.borderSubtle,
+                    }
+                  ]}
+                >
+                  <Text style={{ fontSize: 13 }}>{emoji}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          {/* Comment Threads Section */}
+          <View style={[styles.cardDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }]} />
+          <View style={styles.commentsSection}>
+            {item.comments && item.comments.length > 0 ? (
+              item.comments.map((comment) => (
+                <View key={comment.id} style={styles.commentRow}>
+                  <UserAvatar uri={comment.user.avatar} username={comment.user.username} size="sm" />
+                  <View style={[styles.commentBubble, { backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', borderColor: colors.borderSubtle }]}>
+                    <Text variant="micro" weight="bold" color={colors.primary}>
+                      @{comment.user.username}
+                    </Text>
+                    <Text variant="caption" color={colors.text} style={{ marginTop: 1 }}>
+                      {comment.content}
+                    </Text>
+                  </View>
+                </View>
+              ))
+            ) : null}
+
+            {/* Comment Input */}
+            <View style={styles.commentInputRow}>
+              <View style={[styles.commentInputWrapper, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)', borderColor: colors.borderSubtle }]}>
+                <TextInput
+                  placeholder="Write a supportive comment..."
+                  placeholderTextColor={colors.textTertiary}
+                  value={commentInputs[item.id] || ''}
+                  onChangeText={(txt) => setCommentInputs(prev => ({ ...prev, [item.id]: txt }))}
+                  style={[styles.commentInput, { color: colors.text }]}
+                />
+              </View>
+              <Pressable
+                onPress={() => handlePostComment(item.id)}
+                disabled={submittingComment[item.id]}
+                style={[styles.commentSendBtn, { backgroundColor: colors.primary }]}
+              >
+                {submittingComment[item.id] ? (
+                  <ActivityIndicator size="small" color={colors.surface} />
+                ) : (
+                  <Send size={12} color={colors.surface} />
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </GlassCard>
+      </Animated.View>
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      
+      {/* Background ambient gradient orbs */}
+      <View style={StyleSheet.absoluteFill}>
+        <LinearGradient
+          colors={isDark ? ['#08080C', '#0E0E12'] : ['#F4F5F7', '#EBEFF3']}
+          style={StyleSheet.absoluteFill}
+        />
+        {isDark && (
+          <>
+            <LinearGradient
+              colors={['rgba(138, 35, 135, 0.06)', 'transparent']}
+              style={[styles.ambientOrb, { top: -80, right: -60, width: 280, height: 280 }]}
+            />
+            <LinearGradient
+              colors={['rgba(255, 75, 43, 0.05)', 'transparent']}
+              style={[styles.ambientOrb, { bottom: 120, left: -80, width: 340, height: 340 }]}
+            />
+          </>
+        )}
+      </View>
+
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8, borderColor: colors.borderSubtle }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 8, borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' }]}>
         <View style={styles.headerTitleRow}>
           <View>
             <Text variant="h2" weight="bold" color={colors.text}>
@@ -308,7 +550,7 @@ export default function SocialFeedScreen() {
               fetchSocialConnections();
               setFriendsListVisible(true);
             }} 
-            style={[styles.companionsTriggerBtn, { backgroundColor: colors.surfaceElevated, borderColor: colors.borderSubtle }]}
+            style={[styles.companionsTriggerBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)', borderColor: colors.borderSubtle }]}
           >
             <Users size={16} color={colors.primary} />
             {pendingRequests.length > 0 && (
@@ -324,12 +566,12 @@ export default function SocialFeedScreen() {
         <Spacer size="sm" />
 
         {/* Tab switch segmented buttons */}
-        <View style={[styles.tabSegment, { backgroundColor: colors.surface }]}>
+        <View style={[styles.tabSegment, { backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', borderColor: colors.borderSubtle, borderWidth: 1 }]}>
           <Pressable
             onPress={() => setActiveTab('feed')}
             style={[
               styles.tabBtn,
-              activeTab === 'feed' && { backgroundColor: colors.surfaceElevated },
+              activeTab === 'feed' && { backgroundColor: isDark ? 'rgba(255,75,43,0.12)' : 'rgba(255,75,43,0.06)', borderRadius: radius.lg },
             ]}
           >
             <Users size={14} color={activeTab === 'feed' ? colors.primary : colors.textSecondary} style={{ marginRight: 6 }} />
@@ -341,7 +583,7 @@ export default function SocialFeedScreen() {
             onPress={() => setActiveTab('discover')}
             style={[
               styles.tabBtn,
-              activeTab === 'discover' && { backgroundColor: colors.surfaceElevated },
+              activeTab === 'discover' && { backgroundColor: isDark ? 'rgba(255,75,43,0.12)' : 'rgba(255,75,43,0.06)', borderRadius: radius.lg },
             ]}
           >
             <Compass size={14} color={activeTab === 'discover' ? colors.primary : colors.textSecondary} style={{ marginRight: 6 }} />
@@ -356,7 +598,7 @@ export default function SocialFeedScreen() {
         /* ================= FEED SCREEN ================= */
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: 90 + insets.bottom }]}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
           }
@@ -364,7 +606,7 @@ export default function SocialFeedScreen() {
           <Spacer size="md" />
 
           {/* Quick Connect Friends Widget */}
-          <Surface elevation="raised" borderRadius="2xl" bordered style={styles.addFriendCard}>
+          <GlassCard borderRadius="2xl" style={[styles.addFriendCard, { borderColor: 'rgba(255,255,255,0.05)' }]}>
             <Text variant="bodySmall" weight="bold" color={colors.text}>
               Connect Habiteers
             </Text>
@@ -373,7 +615,7 @@ export default function SocialFeedScreen() {
             </Text>
             
             <View style={styles.inputRow}>
-              <View style={[styles.inputContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)', borderColor: colors.border }]}>
+              <View style={[styles.inputContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)', borderColor: colors.borderSubtle }]}>
                 <TextInput
                   placeholder="Enter companion username..."
                   placeholderTextColor={colors.textTertiary}
@@ -391,7 +633,7 @@ export default function SocialFeedScreen() {
                 {actionLoading ? <ActivityIndicator size="small" color={colors.surface} /> : <Plus size={20} color={colors.surface} />}
               </Pressable>
             </View>
-          </Surface>
+          </GlassCard>
 
           <Spacer size="md" />
 
@@ -402,7 +644,7 @@ export default function SocialFeedScreen() {
               <Text variant="caption" color={colors.textTertiary}>Loading activity feed...</Text>
             </View>
           ) : socialFeed.length === 0 ? (
-            <Surface elevation="raised" borderRadius="2xl" bordered style={styles.emptyCard}>
+            <GlassCard borderRadius="2xl" style={styles.emptyCard}>
               <Compass size={40} color={colors.textSecondary} style={{ opacity: 0.5, marginBottom: 12 }} />
               <Text variant="bodySmall" weight="bold" color={colors.textSecondary} align="center">
                 No recent companion activity.
@@ -410,120 +652,17 @@ export default function SocialFeedScreen() {
               <Text variant="caption" color={colors.textTertiary} align="center" style={{ marginTop: 2, paddingHorizontal: 16 }}>
                 Search for global users in the "Global Discovery" tab to start growing your social ecosystem!
               </Text>
-            </Surface>
+            </GlassCard>
           ) : (
-            socialFeed.map((item) => (
-              <GlassCard key={item.id} borderRadius="2xl" style={styles.feedCard}>
-                {/* Header */}
-                <View style={styles.cardHeader}>
-                  <View style={styles.userInfo}>
-                    <UserAvatar uri={item.user.avatar} username={item.user.username} size="sm" borderRankColor={colors.primary} />
-                    <View>
-                      <Text variant="bodySmall" weight="bold" color={colors.text}>
-                        @{item.user.username}
-                      </Text>
-                      <Text variant="micro" color={colors.textTertiary}>
-                        Level {item.user.level || 1} • {item.user.streak || 0}🔥 Streak
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={[styles.categoryBadge, { backgroundColor: colors.primary + '20' }]}>
-                    <Text variant="micro" weight="bold" color={colors.primary}>
-                      {item.challenge.category.toUpperCase()}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Completion Box */}
-                <Surface elevation="raised" borderRadius="lg" bordered style={styles.completionBox}>
-                  <Text variant="bodySmall" weight="bold" color={colors.text}>
-                    Completed: {item.challenge.title}
-                  </Text>
-                  <Text variant="caption" color={colors.textSecondary} style={{ marginTop: 2, lineHeight: 18 }}>
-                    {item.challenge.description}
-                  </Text>
-                </Surface>
-
-                {/* Reactions list */}
-                {item.reactions && item.reactions.length > 0 && (
-                  <View style={styles.reactionsShelf}>
-                    {item.reactions.slice(0, 4).map((react, rIdx) => (
-                      <View key={rIdx} style={[styles.reactionPill, { backgroundColor: colors.surfaceElevated, borderColor: colors.borderSubtle }]}>
-                        <Text style={styles.reactionText}>
-                          {react.emoji} <Text style={{ fontSize: 9, color: colors.textSecondary }}>@{react.username}</Text>
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-
-                {/* Reaction Actions */}
-                <View style={[styles.cardDivider, { backgroundColor: colors.borderSubtle }]} />
-                <View style={styles.actionRow}>
-                  <View style={styles.reactionButtons}>
-                    {['🔥', '👏', '💪', '👑'].map((emoji) => (
-                      <Pressable
-                        key={emoji}
-                        onPress={() => handleSendReaction(item.user.id, emoji)}
-                        style={[styles.emojiButton, { backgroundColor: colors.surfaceElevated, borderColor: colors.borderSubtle }]}
-                      >
-                        <Text style={{ fontSize: 13 }}>{emoji}</Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                </View>
-
-                {/* Comment Threads Section */}
-                <View style={[styles.cardDivider, { backgroundColor: colors.borderSubtle }]} />
-                <View style={styles.commentsSection}>
-                  {item.comments && item.comments.length > 0 ? (
-                    item.comments.map((comment) => (
-                      <View key={comment.id} style={styles.commentRow}>
-                        <UserAvatar uri={comment.user.avatar} username={comment.user.username} size="sm" />
-                        <View style={[styles.commentBubble, { backgroundColor: colors.surface }]}>
-                          <Text variant="micro" weight="bold" color={colors.primary}>
-                            @{comment.user.username}
-                          </Text>
-                          <Text variant="caption" color={colors.text} style={{ marginTop: 1 }}>
-                            {comment.content}
-                          </Text>
-                        </View>
-                      </View>
-                    ))
-                  ) : null}
-
-                  {/* Comment Input */}
-                  <View style={styles.commentInputRow}>
-                    <View style={[styles.commentInputWrapper, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
-                      <TextInput
-                        placeholder="Write a supportive comment..."
-                        placeholderTextColor={colors.textTertiary}
-                        value={commentInputs[item.id] || ''}
-                        onChangeText={(txt) => setCommentInputs(prev => ({ ...prev, [item.id]: txt }))}
-                        style={[styles.commentInput, { color: colors.text }]}
-                      />
-                    </View>
-                    <Pressable
-                      onPress={() => handlePostComment(item.id)}
-                      disabled={submittingComment[item.id]}
-                      style={[styles.commentSendBtn, { backgroundColor: colors.primary }]}
-                    >
-                      {submittingComment[item.id] ? (
-                        <ActivityIndicator size="small" color={colors.surface} />
-                      ) : (
-                        <Send size={12} color={colors.surface} />
-                      )}
-                    </Pressable>
-                  </View>
-                </View>
-              </GlassCard>
+            socialFeed.map((item, idx) => (
+              <StaggeredCard key={item.id} item={item} index={idx} />
             ))
           )}
           <Spacer size="5xl" />
         </ScrollView>
       ) : (
         /* ================= DISCOVERY / SEARCH SCREEN ================= */
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: 90 + insets.bottom }]}>
           <Spacer size="md" />
 
           {/* Unified Discovery Search Input */}
@@ -652,7 +791,12 @@ export default function SocialFeedScreen() {
       )}
 
       {/* Companions Alliance Modal Overlay */}
-      <Modal visible={friendsListVisible} animationType="slide" transparent>
+      <Modal
+        visible={friendsListVisible}
+        animationType="slide"
+        transparent={true}
+        statusBarTranslucent={true}
+      >
         <View
           style={[
             styles.modalOverlay,
@@ -1098,5 +1242,23 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  userTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  milestoneBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    gap: 3,
+  },
+  ambientOrb: {
+    position: 'absolute',
+    borderRadius: 999,
+    opacity: 0.15,
   },
 });

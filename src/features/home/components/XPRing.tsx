@@ -28,28 +28,30 @@ export const XPRing: React.FC<XPRingProps> = ({
   size = 120,
   strokeWidth = 10,
 }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const xpInCurrentLevel = xp % 100;
   
-  // Progress value from 0 to 1
   const progress = useSharedValue(0);
   const ringScale = useSharedValue(1);
+  const pulseOpacity = useSharedValue(0.4);
 
   useEffect(() => {
-    // Smooth timing animation for filling the arc
-    progress.value = withTiming(xpInCurrentLevel / 100, { duration: 1000 });
+    progress.value = withTiming(xpInCurrentLevel / 100, { duration: 1200 });
   }, [xp]);
 
   useEffect(() => {
-    // Spring scaling jump on level up
     ringScale.value = withSequence(
-      withSpring(1.1, animations.spring.snappy),
-      withSpring(1.0, animations.spring.bouncy)
+      withSpring(1.15, { damping: 10, stiffness: 200 }),
+      withSpring(1.0, { damping: 12, stiffness: 120 })
     );
   }, [level]);
+
+  useEffect(() => {
+    pulseOpacity.value = withSpring(0.6, { damping: 20, stiffness: 50 });
+  }, []);
 
   const animatedProps = useAnimatedProps(() => {
     const strokeDashoffset = circumference - progress.value * circumference;
@@ -64,9 +66,33 @@ export const XPRing: React.FC<XPRingProps> = ({
     };
   });
 
+  const glowStyle = useAnimatedStyle(() => {
+    return {
+      opacity: withTiming(progress.value * 0.35 + 0.15, { duration: 500 }),
+    };
+  });
+
   return (
     <View style={[styles.container, { width: size, height: size + 28 }]}>
       <Animated.View style={[styles.ringContainer, { width: size, height: size }, animatedRingStyle]}>
+        
+        {/* Futuristic Ambient Glowing Halo Underlay */}
+        <Animated.View
+          style={[
+            styles.glowHalo,
+            {
+              width: size - strokeWidth,
+              height: size - strokeWidth,
+              borderRadius: (size - strokeWidth) / 2,
+              borderWidth: strokeWidth,
+              borderColor: colors.primary,
+              backgroundColor: 'transparent',
+              shadowColor: colors.primary,
+            },
+            glowStyle,
+          ]}
+        />
+
         <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={styles.svg}>
           <Defs>
             <LinearGradient id="xpGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -76,12 +102,12 @@ export const XPRing: React.FC<XPRingProps> = ({
             </LinearGradient>
           </Defs>
 
-          {/* Underlay track */}
+          {/* Underlay track with translucent border shine */}
           <Circle
             cx={size / 2}
             cy={size / 2}
             r={radius}
-            stroke={colors.borderSubtle}
+            stroke={isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)'}
             strokeWidth={strokeWidth}
             fill="transparent"
           />
@@ -102,12 +128,12 @@ export const XPRing: React.FC<XPRingProps> = ({
           />
         </Svg>
 
-        {/* Center content */}
+        {/* Center content overlay */}
         <View style={[StyleSheet.absoluteFill, styles.centerContent]}>
-          <Text variant="caption" weight="bold" color={colors.textTertiary} style={styles.label}>
+          <Text variant="micro" weight="bold" color={colors.textTertiary} style={styles.label}>
             LEVEL
           </Text>
-          <Text variant="hero" weight="display" color={colors.text} style={styles.levelNumber}>
+          <Text variant="hero" weight="display" color={colors.text} style={[styles.levelNumber, { textShadowColor: 'rgba(255, 75, 43, 0.3)', textShadowRadius: 8, textShadowOffset: { width: 0, height: 0 } }]}>
             {level}
           </Text>
         </View>
@@ -115,7 +141,7 @@ export const XPRing: React.FC<XPRingProps> = ({
 
       {/* Progress sub-caption below the ring */}
       <Text variant="bodySmall" weight="bold" color={colors.textSecondary} style={styles.progressText}>
-        {xpInCurrentLevel}/100 <Text variant="caption" weight="bold" color={colors.textTertiary}>XP</Text>
+        {xpInCurrentLevel} <Text variant="micro" weight="bold" color={colors.textTertiary}>/ 100 XP</Text>
       </Text>
     </View>
   );
@@ -134,6 +160,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
+  glowHalo: {
+    position: 'absolute',
+    ...Platform.select({
+      ios: {
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.6,
+        shadowRadius: 18,
+      },
+      android: {
+        elevation: 10,
+      },
+    }),
+    zIndex: -1,
+  },
   svg: {
     transform: [{ scaleX: 1 }],
     flexShrink: 0,
@@ -148,13 +188,12 @@ const styles = StyleSheet.create({
     marginBottom: -4,
   },
   levelNumber: {
-    fontSize: 38,
+    fontSize: 40,
     lineHeight: 44,
   },
   progressText: {
-    marginTop: 6,
+    marginTop: 8,
     fontSize: 12,
-    fontWeight: 'bold',
     letterSpacing: 0.5,
     flexShrink: 0,
   },

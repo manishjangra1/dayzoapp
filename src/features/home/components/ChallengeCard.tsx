@@ -4,8 +4,11 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
+  withRepeat,
+  withSequence,
+  withTiming,
 } from 'react-native-reanimated';
-import { Clock, Zap, CheckCircle2, ChevronRight, Share2 } from 'lucide-react-native';
+import { Clock, Zap, CheckCircle2, ChevronRight, Share2, Compass, Flame, Users } from 'lucide-react-native';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { Text } from '../../../design-system/primitives/Text';
 import { GlassCard } from '../../../design-system/primitives/GlassCard';
@@ -14,6 +17,7 @@ import { AnimatedButton } from '../../../design-system/primitives/AnimatedButton
 import { triggerConfetti } from '../../../utils/confetti';
 import { animations } from '../../../design-system/tokens/animations';
 import { radius } from '../../../design-system/tokens/radius';
+import { UserAvatar } from '../../../components/common/UserAvatar';
 
 export interface Challenge {
   id: string;
@@ -42,18 +46,34 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({
 }) => {
   const { colors, isDark } = useTheme();
   const scale = useSharedValue(1);
+  const pulseScale = useSharedValue(1);
+
+  React.useEffect(() => {
+    if (!completed) {
+      pulseScale.value = withRepeat(
+        withSequence(
+          withTiming(1.02, { duration: 1500 }),
+          withTiming(1.0, { duration: 1500 })
+        ),
+        -1,
+        true
+      );
+    } else {
+      pulseScale.value = 1;
+    }
+  }, [completed]);
 
   const handlePressIn = () => {
-    scale.value = withSpring(0.98, animations.spring.snappy);
+    scale.value = withSpring(0.96, { damping: 12, stiffness: 180 });
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(1, animations.spring.bouncy);
+    scale.value = withSpring(1, { damping: 10, stiffness: 120 });
   };
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
-      transform: [{ scale: scale.value }],
+      transform: [{ scale: scale.value * (completed ? 1 : pulseScale.value) }],
     };
   });
 
@@ -61,21 +81,25 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({
     const norm = cat.toLowerCase();
     switch (norm) {
       case 'fitness':
-        return { color: '#00F2FE', label: 'FITNESS', gradient: ['#00F2FE', '#4FACFE'] };
+        return { color: '#00F2FE', label: 'FITNESS QUEST', glow: 'rgba(0, 242, 254, 0.25)', bgGlow: 'rgba(0, 242, 254, 0.04)' };
       case 'productivity':
-        return { color: '#FF4B2B', label: 'PRODUCTIVITY', gradient: ['#FF4B2B', '#FF416C'] };
+        return { color: '#FF4B2B', label: 'ELITE MISSION', glow: 'rgba(255, 75, 43, 0.25)', bgGlow: 'rgba(255, 75, 43, 0.04)' };
       case 'learning':
-        return { color: '#8A2387', label: 'LEARNING', gradient: ['#8A2387', '#E94057'] };
+        return { color: '#8A2387', label: 'INTELLECT QUEST', glow: 'rgba(138, 35, 135, 0.25)', bgGlow: 'rgba(138, 35, 135, 0.04)' };
       case 'mindfulness':
-        return { color: '#10B981', label: 'MINDFULNESS', gradient: ['#10B981', '#059669'] };
+        return { color: '#10B981', label: 'ZEN OBJECTIVE', glow: 'rgba(16, 185, 129, 0.25)', bgGlow: 'rgba(16, 185, 129, 0.04)' };
       case 'social':
-        return { color: '#E94057', label: 'SOCIAL', gradient: ['#E94057', '#F27121'] };
+        return { color: '#E94057', label: 'REALM ALLIANCE', glow: 'rgba(233, 64, 87, 0.25)', bgGlow: 'rgba(233, 64, 87, 0.04)' };
       default:
-        return { color: '#FF4B2B', label: 'CHALLENGE', gradient: ['#FF4B2B', '#E94057'] };
+        return { color: '#FF4B2B', label: 'CHALLENGE', glow: 'rgba(255, 75, 43, 0.25)', bgGlow: 'rgba(255, 75, 43, 0.04)' };
     }
   };
 
   const catTheme = getCategoryTheme(challenge.category);
+
+  // Deterministic mock companions count to maximize feed social density
+  const totalCompletions = (challenge.title.length * 7) % 24 + 11;
+  const companionInitials = ['AN', 'JD', 'KL', 'MR'];
 
   const handleCompletePress = () => {
     triggerConfetti();
@@ -84,29 +108,41 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({
 
   return (
     <Animated.View style={[animatedStyle, styles.cardContainer]}>
-      <GlassCard borderRadius="2xl" intensity="high" style={[styles.card, { borderColor: completed ? colors.success : 'rgba(255, 255, 255, 0.08)' }]}>
-        {/* Subtle Category Accent Border Line at Top */}
-        <View style={[styles.accentLine, { backgroundColor: completed ? colors.success : catTheme.color }]} />
+      <GlassCard
+        borderRadius="2xl"
+        intensity="high"
+        style={[
+          styles.card,
+          {
+            borderColor: completed ? 'rgba(52, 211, 153, 0.35)' : catTheme.glow,
+            backgroundColor: completed ? (isDark ? 'rgba(10, 20, 16, 0.6)' : 'rgba(230, 248, 240, 0.95)') : (isDark ? 'rgba(20, 20, 26, 0.5)' : 'rgba(255, 255, 255, 0.85)'),
+          }
+        ]}
+      >
+        {/* Glow pulsing ambient aura inside quest card */}
+        {!completed && (
+          <View style={[styles.ambientGlow, { backgroundColor: catTheme.color, opacity: isDark ? 0.07 : 0.03 }]} />
+        )}
 
-        {/* Card Header */}
+        {/* Quest Badge Indicator */}
         <View style={styles.header}>
-          <View style={[styles.badge, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' }]}>
+          <View style={[styles.questBadge, { backgroundColor: completed ? 'rgba(52, 211, 153, 0.15)' : `${catTheme.color}20` }]}>
+            <Compass size={12} color={completed ? colors.success : catTheme.color} />
             <Text variant="micro" weight="bold" color={completed ? colors.success : catTheme.color} style={styles.badgeText}>
-              {completed ? 'COMPLETED' : catTheme.label}
+              {completed ? 'QUEST SECURED' : catTheme.label}
             </Text>
           </View>
           
+          {/* Rarity and rewards indicators */}
           <View style={styles.statPills}>
-            {/* XP Pill */}
-            <View style={[styles.pill, { backgroundColor: isDark ? 'rgba(138, 35, 135, 0.15)' : 'rgba(138, 35, 135, 0.08)' }]}>
-              <Zap size={11} color="#8A2387" fill="#8A2387" />
-              <Text variant="micro" weight="bold" color="#8A2387" style={styles.pillText}>
+            <View style={[styles.pill, { backgroundColor: isDark ? 'rgba(255, 75, 43, 0.1)' : 'rgba(255, 75, 43, 0.05)' }]}>
+              <Zap size={11} color={colors.primary} fill={colors.primary} />
+              <Text variant="micro" weight="bold" color={colors.primary} style={styles.pillText}>
                 +{challenge.xpReward} XP
               </Text>
             </View>
 
-            {/* Time Pill */}
-            <View style={[styles.pill, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' }]}>
+            <View style={[styles.pill, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)' }]}>
               <Clock size={11} color={colors.textSecondary} />
               <Text variant="micro" weight="bold" color={colors.textSecondary} style={styles.pillText}>
                 {challenge.duration} MIN
@@ -115,9 +151,9 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({
           </View>
         </View>
 
-        {/* Title & Description */}
+        {/* Quest Objectives */}
         <View style={styles.content}>
-          <Text variant="h2" weight="bold" color={colors.text}>
+          <Text variant="h1" weight="display" color={colors.text} style={styles.questTitle}>
             {challenge.title}
           </Text>
           <Text variant="bodySmall" color={colors.textSecondary} style={styles.desc}>
@@ -125,40 +161,75 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({
           </Text>
         </View>
 
-        {/* Footer Actions */}
+        {/* Social Companions completion list overlay */}
+        <View style={[styles.socialDensityDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' }]} />
+        
+        <View style={styles.socialDensityRow}>
+          <View style={styles.avatarStack}>
+            {companionInitials.map((initial, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.stackAvatarWrapper,
+                  {
+                    left: index * -8,
+                    zIndex: 10 - index,
+                    borderColor: isDark ? '#121216' : '#FFFFFF',
+                    backgroundColor: colors.primary,
+                  }
+                ]}
+              >
+                <Text variant="micro" weight="bold" color="#FFFFFF" style={{ fontSize: 8 }}>
+                  {initial}
+                </Text>
+              </View>
+            ))}
+          </View>
+          <Text variant="micro" color={colors.textSecondary} style={[styles.socialText, { marginLeft: (companionInitials.length - 1) * -8 + 8 }]}>
+            🔥 {totalCompletions} companions secured this quest today!
+          </Text>
+        </View>
+
+        {/* Call to action */}
         <View style={styles.footer}>
           {completed ? (
             <View style={styles.completedRow}>
-              <Surface elevation="raised" borderRadius="md" style={styles.completedBanner}>
-                <CheckCircle2 size={18} color={colors.success} />
-                <Text variant="bodySmall" weight="bold" color={colors.success} style={styles.completedText} numberOfLines={1} ellipsizeMode="tail">
-                  Day Complete. Keep it up!
+              <View style={[styles.completedBanner, { backgroundColor: 'rgba(52, 211, 153, 0.08)', borderColor: 'rgba(52, 211, 153, 0.2)' }]}>
+                <CheckCircle2 size={16} color={colors.success} />
+                <Text variant="bodySmall" weight="bold" color={colors.success} style={styles.completedText}>
+                  MISSION COMPLETE
                 </Text>
-              </Surface>
+              </View>
               {onShare && (
                 <Pressable
                   onPress={onShare}
                   style={({ pressed }) => [
                     styles.shareIconBtn,
                     {
-                      backgroundColor: isDark ? 'rgba(255, 75, 43, 0.1)' : 'rgba(255, 75, 43, 0.05)',
+                      backgroundColor: 'rgba(255, 75, 43, 0.1)',
                       borderColor: colors.primary,
                       borderWidth: 1,
-                      opacity: pressed ? 0.8 : 1,
+                      opacity: pressed ? 0.7 : 1,
                     }
                   ]}
                 >
-                  <Share2 size={22} color={colors.primary} />
+                  <Share2 size={18} color={colors.primary} />
                 </Pressable>
               )}
             </View>
           ) : (
             <AnimatedButton
-              title="Complete Challenge"
+              title="ENGAGE MISSION"
               onPress={handleCompletePress}
               loading={actionLoading}
               borderRadius="md"
-              style={[styles.button, { backgroundColor: catTheme.color }]}
+              style={[
+                styles.engageButton,
+                {
+                  backgroundColor: catTheme.color,
+                  shadowColor: catTheme.color,
+                }
+              ]}
             />
           )}
         </View>
@@ -172,27 +243,32 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   card: {
-    padding: 18,
+    padding: 20,
     position: 'relative',
     overflow: 'hidden',
+    borderWidth: 1,
   },
-  accentLine: {
+  ambientGlow: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 4,
+    top: -60,
+    right: -60,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  badge: {
+  questBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: radius.xs,
+    gap: 4,
   },
   badgeText: {
     letterSpacing: 1,
@@ -204,8 +280,8 @@ const styles = StyleSheet.create({
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: radius.xs,
     gap: 3,
   },
@@ -213,23 +289,65 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   content: {
-    marginBottom: 18,
+    marginBottom: 14,
+  },
+  questTitle: {
+    fontSize: 22,
+    lineHeight: 28,
+    letterSpacing: -0.5,
   },
   desc: {
     marginTop: 6,
-    lineHeight: 20,
+    lineHeight: 18,
+  },
+  socialDensityDivider: {
+    height: 1,
+    width: '100%',
+    marginVertical: 4,
+  },
+  socialDensityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 8,
+  },
+  avatarStack: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  stackAvatarWrapper: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  socialText: {
+    fontSize: 10,
+    fontWeight: '600',
   },
   footer: {
     width: '100%',
+    marginTop: 10,
   },
-  button: {
+  engageButton: {
     width: '100%',
-    paddingVertical: 12,
+    paddingVertical: 14,
+    ...Platform.select({
+      ios: {
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.35,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
   completedRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     width: '100%',
   },
   completedBanner: {
@@ -237,20 +355,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 16,
     gap: 8,
     borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.15)',
+    borderRadius: radius.md,
   },
   shareIconBtn: {
-    width: 44,
-    height: 44,
+    width: 46,
+    height: 46,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
   completedText: {
-    marginLeft: 4,
+    fontSize: 11,
+    letterSpacing: 1,
+    fontWeight: '800',
   },
 });

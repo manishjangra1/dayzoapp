@@ -1,14 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Pressable, ScrollView, RefreshControl, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Trophy, Award } from 'lucide-react-native';
+import { Trophy, Award, Crown, ArrowUp, ArrowDown, Minus } from 'lucide-react-native';
 import api from '../../services/api';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
 import { Text } from '../../design-system/primitives/Text';
 import { GlassCard } from '../../design-system/primitives/GlassCard';
 import { Surface } from '../../design-system/primitives/Surface';
-import { UserAvatar } from '../../components/common/UserAvatar';
 import { Spacer } from '../../design-system/primitives/Spacer';
+import { LinearGradient } from 'expo-linear-gradient';
+import { UserAvatar } from '../../components/common/UserAvatar';
+import { radius } from '../../design-system/tokens/radius';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  withDelay,
+} from 'react-native-reanimated';
 
 export default function LeaderboardScreen() {
   const { colors, isDark } = useTheme();
@@ -52,34 +61,98 @@ export default function LeaderboardScreen() {
   const top3 = list.slice(0, 3);
   const remainder = list.slice(3);
 
-  // Re-order top3 to display: [Rank 2, Rank 1, Rank 3] for visual podium alignment
-  const podiumOrder = () => {
-    const ordered = [];
-    if (top3[1]) ordered.push({ item: top3[1], rank: 2 });
-    if (top3[0]) ordered.push({ item: top3[0], rank: 1 });
-    if (top3[2]) ordered.push({ item: top3[2], rank: 3 });
-    return ordered;
-  };
+  // Staggered rank row component
+  const StaggeredRankRow = ({ item, rank, index }: { item: any; rank: number; index: number }) => {
+    const fadeVal = useSharedValue(0);
+    const slideVal = useSharedValue(16);
 
-  const orderedPodium = podiumOrder();
+    useEffect(() => {
+      fadeVal.value = withDelay(index * 40, withTiming(1, { duration: 350 }));
+      slideVal.value = withDelay(index * 40, withSpring(0, { damping: 12, stiffness: 100 }));
+    }, [index]);
 
-  const getRankMedal = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return '🥇';
-      case 2:
-        return '🥈';
-      case 3:
-        return '🥉';
-      default:
-        return `${rank}`;
-    }
+    const animatedStyle = useAnimatedStyle(() => {
+      return {
+        opacity: fadeVal.value,
+        transform: [{ translateY: slideVal.value }],
+      };
+    });
+
+    // Mock deterministic rank movement
+    const shiftHash = (item.username.charCodeAt(0) + item.username.length) % 3;
+    const movement = shiftHash === 0 ? 'up' : shiftHash === 1 ? 'down' : 'stable';
+
+    return (
+      <Animated.View style={animatedStyle}>
+        <View style={[styles.rankRow, { borderBottomColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' }]}>
+          <View style={styles.rankRowLeft}>
+            <View style={styles.rankBadgeCell}>
+              <Text variant="bodySmall" weight="bold" color={colors.textTertiary} style={styles.rankNum}>
+                {rank}
+              </Text>
+              
+              {/* Dynamic shift indicator */}
+              {movement === 'up' ? (
+                <ArrowUp size={10} color="#34D399" />
+              ) : movement === 'down' ? (
+                <ArrowDown size={10} color="#F87171" />
+              ) : (
+                <Minus size={10} color={colors.textTertiary} />
+              )}
+            </View>
+
+            <UserAvatar uri={item.avatar} username={item.username} size="sm" />
+            
+            <View style={styles.rankInfo}>
+              <Text variant="bodySmall" weight="bold" color={colors.text}>
+                @{item.username}
+              </Text>
+              <Text variant="micro" color={colors.textTertiary}>
+                Level {item.level || 1} • {item.title || 'Rookie'}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.rankRowRight}>
+            <Text variant="bodySmall" weight="bold" color={colors.text}>
+              {item.xp} <Text variant="micro" color={colors.textTertiary}>XP</Text>
+            </Text>
+            <View style={styles.streakPillRow}>
+              <Text variant="micro" weight="bold" color={colors.primary}>
+                {item.streak || 0}🔥
+              </Text>
+            </View>
+          </View>
+        </View>
+      </Animated.View>
+    );
   };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      
+      {/* Dynamic Backing Mesh Gradients */}
+      <View style={StyleSheet.absoluteFill}>
+        <LinearGradient
+          colors={isDark ? ['#08080C', '#0E0E12'] : ['#F4F5F7', '#EBEFF3']}
+          style={StyleSheet.absoluteFill}
+        />
+        {isDark && (
+          <>
+            <LinearGradient
+              colors={['rgba(255, 75, 43, 0.08)', 'transparent']}
+              style={[styles.ambientOrb, { top: -60, left: -60, width: 280, height: 280 }]}
+            />
+            <LinearGradient
+              colors={['rgba(138, 35, 135, 0.06)', 'transparent']}
+              style={[styles.ambientOrb, { bottom: 120, right: -80, width: 340, height: 340 }]}
+            />
+          </>
+        )}
+      </View>
+
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8, borderColor: colors.borderSubtle }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 8, borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' }]}>
         <Text variant="h2" weight="bold" color={colors.text}>
           Arena
         </Text>
@@ -90,109 +163,122 @@ export default function LeaderboardScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 90 + insets.bottom }]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
       >
         <Spacer size="md" />
 
-        {/* Global/Friends toggle switcher */}
-        <Surface elevation="raised" borderRadius="full" style={styles.scopeSwitcher}>
+        {/* Unified Glass Scope Switcher */}
+        <GlassCard borderRadius="full" style={styles.scopeSwitcher}>
           <Pressable
             onPress={() => setScope('global')}
-            style={[styles.scopeBtn, scope === 'global' && { backgroundColor: colors.primary }]}
+            style={[styles.scopeBtn, scope === 'global' && { backgroundColor: colors.primary, borderRadius: radius.full }]}
           >
-            <Text variant="caption" weight="bold" color={scope === 'global' ? colors.surface : colors.textSecondary}>
+            <Text variant="micro" weight="bold" color={scope === 'global' ? colors.surface : colors.textSecondary}>
               GLOBAL ARENA
             </Text>
           </Pressable>
           <Pressable
             onPress={() => setScope('friends')}
-            style={[styles.scopeBtn, scope === 'friends' && { backgroundColor: colors.primary }]}
+            style={[styles.scopeBtn, scope === 'friends' && { backgroundColor: colors.primary, borderRadius: radius.full }]}
           >
-            <Text variant="caption" weight="bold" color={scope === 'friends' ? colors.surface : colors.textSecondary}>
-              MY FRIENDS
+            <Text variant="micro" weight="bold" color={scope === 'friends' ? colors.surface : colors.textSecondary}>
+              MY COMPANIONS
             </Text>
           </Pressable>
-        </Surface>
+        </GlassCard>
 
         <Spacer size="lg" />
 
-        {/* 3D Visual Podium Spotlights */}
+        {/* 3D Golden/Holographic Podium Spotlights */}
         {top3.length > 0 ? (
           <View style={styles.podiumContainer}>
-            {/* Display Rank 2 (Left) */}
+            
+            {/* Rank 2 Podium (Silver Glow) */}
             {top3[1] && (
               <View style={styles.podiumCol}>
-                <UserAvatar uri={top3[1].avatar} username={top3[1].username} size="md" borderRankColor="rgba(255,255,255,0.2)" />
+                <UserAvatar uri={top3[1].avatar} username={top3[1].username} size="md" borderRankColor="rgba(255,255,255,0.4)" />
                 <Spacer size="xs" />
-                <Text variant="caption" weight="bold" color={colors.textSecondary} numberOfLines={1}>
+                <Text variant="caption" weight="bold" color={colors.text} numberOfLines={1} style={styles.podiumName}>
                   @{top3[1].username}
                 </Text>
                 <Text variant="micro" weight="bold" color={colors.primary}>
                   {top3[1].xp} XP
                 </Text>
-                <Surface elevation="raised" style={[styles.podiumPillar, { height: 70, borderTopColor: 'rgba(255,255,255,0.1)' }]}>
-                  <Text variant="h1" weight="display" color={colors.textTertiary}>
+                <GlassCard borderRadius="lg" style={[styles.podiumPillar, { height: 75, borderColor: 'rgba(255,255,255,0.25)' }]}>
+                  <LinearGradient
+                    colors={['rgba(255,255,255,0.06)', 'transparent']}
+                    style={[StyleSheet.absoluteFill, { borderRadius: radius.md }]}
+                  />
+                  <Text variant="h1" weight="display" color={colors.textSecondary}>
                     2
                   </Text>
-                </Surface>
+                </GlassCard>
               </View>
             )}
 
-            {/* Display Rank 1 (Center) */}
+            {/* Rank 1 Podium (Holographic Golden Glow + Crown) */}
             {top3[0] && (
               <View style={[styles.podiumCol, styles.centerPillarWrapper]}>
-                <Trophy size={20} color="#FFD700" style={styles.trophyIcon} />
+                <Crown size={22} color="#FFD700" fill="#FFD700" style={styles.crownIcon} />
                 <UserAvatar uri={top3[0].avatar} username={top3[0].username} size="lg" borderRankColor="#FFD700" />
                 <Spacer size="xs" />
-                <Text variant="bodySmall" weight="bold" color={colors.text} numberOfLines={1}>
+                <Text variant="bodySmall" weight="bold" color={colors.text} numberOfLines={1} style={styles.podiumName}>
                   @{top3[0].username}
                 </Text>
                 <Text variant="caption" weight="bold" color={colors.primary}>
                   {top3[0].xp} XP
                 </Text>
-                <Surface elevation="floating" style={[styles.podiumPillar, { height: 100, borderTopColor: '#FFD700' }]}>
-                  <Text variant="hero" weight="display" color="#FFD700">
+                <GlassCard borderRadius="lg" style={[styles.podiumPillar, { height: 110, borderColor: '#FFD700' }]}>
+                  <LinearGradient
+                    colors={['rgba(255,215,0,0.15)', 'transparent']}
+                    style={[StyleSheet.absoluteFill, { borderRadius: radius.md }]}
+                  />
+                  <Text variant="hero" weight="display" color="#FFD700" style={{ textShadowColor: 'rgba(255,215,0,0.4)', textShadowRadius: 8 }}>
                     1
                   </Text>
-                </Surface>
+                </GlassCard>
               </View>
             )}
 
-            {/* Display Rank 3 (Right) */}
+            {/* Rank 3 Podium (Bronze Glow) */}
             {top3[2] && (
               <View style={styles.podiumCol}>
-                <UserAvatar uri={top3[2].avatar} username={top3[2].username} size="md" borderRankColor="rgba(255,255,255,0.1)" />
+                <UserAvatar uri={top3[2].avatar} username={top3[2].username} size="md" borderRankColor="rgba(242,113,33,0.3)" />
                 <Spacer size="xs" />
-                <Text variant="caption" weight="bold" color={colors.textSecondary} numberOfLines={1}>
+                <Text variant="caption" weight="bold" color={colors.text} numberOfLines={1} style={styles.podiumName}>
                   @{top3[2].username}
                 </Text>
                 <Text variant="micro" weight="bold" color={colors.primary}>
                   {top3[2].xp} XP
                 </Text>
-                <Surface elevation="raised" style={[styles.podiumPillar, { height: 50, borderTopColor: 'rgba(255,255,255,0.05)' }]}>
+                <GlassCard borderRadius="lg" style={[styles.podiumPillar, { height: 60, borderColor: 'rgba(242,113,33,0.2)' }]}>
+                  <LinearGradient
+                    colors={['rgba(242,113,33,0.06)', 'transparent']}
+                    style={[StyleSheet.absoluteFill, { borderRadius: radius.md }]}
+                  />
                   <Text variant="h2" weight="display" color={colors.textTertiary}>
                     3
                   </Text>
-                </Surface>
+                </GlassCard>
               </View>
             )}
           </View>
         ) : (
-          <Surface elevation="raised" borderRadius="2xl" bordered style={styles.emptyPodium}>
+          <GlassCard borderRadius="2xl" style={styles.emptyPodium}>
             <Trophy size={40} color={colors.textSecondary} style={{ opacity: 0.3, marginBottom: 12 }} />
             <Text variant="bodySmall" weight="bold" color={colors.textSecondary}>
               Podium ranks loading...
             </Text>
-          </Surface>
+          </GlassCard>
         )}
 
         <Spacer size="lg" />
 
-        {/* Remainder ranks listing */}
-        <Surface elevation="raised" borderRadius="2xl" bordered style={styles.ranksCard}>
+        {/* Lower rank levels grid */}
+        <GlassCard borderRadius="2xl" style={[styles.ranksCard, { borderColor: 'rgba(255,255,255,0.05)' }]}>
           {remainder.length === 0 && top3.length === 0 ? (
             <View style={styles.emptyRanks}>
               <Award size={24} color={colors.textTertiary} />
@@ -201,38 +287,16 @@ export default function LeaderboardScreen() {
               </Text>
             </View>
           ) : (
-            remainder.map((item, idx) => {
-              const globalRank = idx + 4;
-              return (
-                <View key={idx} style={[styles.rankRow, { borderBottomColor: colors.borderSubtle }]}>
-                  <View style={styles.rankRowLeft}>
-                    <Text variant="bodySmall" weight="bold" color={colors.textTertiary} style={styles.rankNum}>
-                      {globalRank}
-                    </Text>
-                    <UserAvatar uri={item.avatar} username={item.username} size="sm" />
-                    <View style={styles.rankInfo}>
-                      <Text variant="bodySmall" weight="bold" color={colors.text}>
-                        @{item.username}
-                      </Text>
-                      <Text variant="micro" color={colors.textTertiary}>
-                        Level {item.level || 1} • {item.title || 'Rookie'}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.rankRowRight}>
-                    <Text variant="bodySmall" weight="bold" color={colors.text}>
-                      {item.xp} <Text variant="micro" color={colors.textTertiary}>XP</Text>
-                    </Text>
-                    <Text variant="micro" weight="bold" color={colors.primary}>
-                      {item.streak || 0}🔥
-                    </Text>
-                  </View>
-                </View>
-              );
-            })
+            remainder.map((item, idx) => (
+              <StaggeredRankRow
+                key={idx}
+                item={item}
+                rank={idx + 4}
+                index={idx}
+              />
+            ))
           )}
-        </Surface>
+        </GlassCard>
         <Spacer size="5xl" />
       </ScrollView>
     </View>
@@ -327,5 +391,30 @@ const styles = StyleSheet.create({
   rankRowRight: {
     alignItems: 'flex-end',
     gap: 2,
+  },
+  ambientOrb: {
+    position: 'absolute',
+    borderRadius: 9999,
+  },
+  rankBadgeCell: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    width: 32,
+    justifyContent: 'center',
+  },
+  streakPillRow: {
+    marginTop: 2,
+  },
+  podiumName: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  crownIcon: {
+    marginBottom: -2,
+    shadowColor: '#FFD700',
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
   },
 });

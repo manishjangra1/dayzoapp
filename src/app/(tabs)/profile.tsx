@@ -1,21 +1,20 @@
-import React from 'react';
-import { StyleSheet, View, ScrollView, Pressable, Platform, TextInput } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { LogOut, Award, ShieldAlert, Sparkles, UserCheck, Flame, Zap } from 'lucide-react-native';
+import { Award, LogOut, Moon, Sparkles } from 'lucide-react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAuthStore } from '../../store/authStore';
-import api from '../../services/api';
-import { useTheme } from '../../design-system/theme/ThemeProvider';
-import { useDialog } from '../../design-system/theme/DialogProvider';
-import { Text } from '../../design-system/primitives/Text';
-import { GlassCard } from '../../design-system/primitives/GlassCard';
-import { Surface } from '../../design-system/primitives/Surface';
 import { UserAvatar } from '../../components/common/UserAvatar';
+import { GlassCard } from '../../design-system/primitives/GlassCard';
 import { Spacer } from '../../design-system/primitives/Spacer';
+import { Text } from '../../design-system/primitives/Text';
+import { useDialog } from '../../design-system/theme/DialogProvider';
+import { useTheme } from '../../design-system/theme/ThemeProvider';
 import { radius } from '../../design-system/tokens/radius';
+import api from '../../services/api';
+import { useAuthStore } from '../../store/authStore';
 
 export default function ProfileScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors, isDark, setTheme, theme } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, clearAuth, updateUser } = useAuthStore();
@@ -97,10 +96,37 @@ export default function ProfileScreen() {
     });
   };
 
+  // Mock 30-day consistency heatmap indices
+  const heatmapData = Array.from({ length: 28 }, (_, i) => ({
+    day: i + 1,
+    completed: i % 3 !== 0 && i % 7 !== 0,
+  }));
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+
+      {/* Background ambient gradient orbs */}
+      <View style={StyleSheet.absoluteFill}>
+        <LinearGradient
+          colors={isDark ? ['#08080C', '#0E0E12'] : ['#F4F5F7', '#EBEFF3']}
+          style={StyleSheet.absoluteFill}
+        />
+        {isDark && (
+          <>
+            <LinearGradient
+              colors={['rgba(255, 75, 43, 0.07)', 'transparent']}
+              style={[styles.ambientOrb, { top: -60, left: -60, width: 280, height: 280 }]}
+            />
+            <LinearGradient
+              colors={['rgba(0, 242, 254, 0.05)', 'transparent']}
+              style={[styles.ambientOrb, { bottom: 120, right: -80, width: 340, height: 340 }]}
+            />
+          </>
+        )}
+      </View>
+
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8, borderColor: colors.borderSubtle }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 8, borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' }]}>
         <Text variant="h2" weight="bold" color={colors.text}>
           Profile
         </Text>
@@ -109,18 +135,20 @@ export default function ProfileScreen() {
         </Text>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: 90 + insets.bottom }]}>
         <Spacer size="md" />
 
         {/* Master Dayzo ID card */}
-        <Surface elevation="floating" borderRadius="2xl" bordered style={[styles.profileCard, { borderColor: colors.primary }]}>
-          {/* Decorative glowing sphere inside */}
-          <View style={[styles.glowingOrbs, { backgroundColor: colors.primary }]} />
-          
+        <GlassCard borderRadius="2xl" intensity="high" style={[styles.profileCard, { borderColor: colors.primary }]}>
+          <LinearGradient
+            colors={['rgba(255, 75, 43, 0.06)', 'transparent']}
+            style={[StyleSheet.absoluteFill, { borderRadius: radius.xl }]}
+          />
+
           <View style={styles.cardHeader}>
             <UserAvatar uri={user?.avatar} username={user?.username} size="lg" borderRankColor={colors.primary} />
-            <View style={styles.rankBadge}>
-              <Text variant="micro" weight="bold" color={colors.primary} style={{ letterSpacing: 1 }}>
+            <View style={[styles.rankBadge, { backgroundColor: 'rgba(255, 75, 43, 0.15)', borderColor: 'rgba(255, 75, 43, 0.3)', borderWidth: 1 }]}>
+              <Text variant="micro" weight="bold" color={colors.primary} style={{ letterSpacing: 1.2 }}>
                 {user?.title?.toUpperCase() || 'ROOKIE'}
               </Text>
             </View>
@@ -131,32 +159,30 @@ export default function ProfileScreen() {
           <Text variant="h1" weight="display" color={colors.text}>
             @{user?.username || 'user'}
           </Text>
-          <Text variant="caption" color={colors.textTertiary} style={{ marginTop: 2 }}>
-            Dayzo Habit Agent • Level {user?.level || 1}
+          <Text variant="caption" color={colors.textSecondary} style={{ marginTop: 2, fontWeight: '600' }}>
+            Habiteer Agent • Level {user?.level || 1}
           </Text>
           {user?.bio ? (
-            <Text variant="bodySmall" color={colors.textSecondary} style={{ marginTop: 8, fontStyle: 'italic' }}>
+            <Text variant="bodySmall" color={colors.textSecondary} style={{ marginTop: 8, fontStyle: 'italic', lineHeight: 18 }}>
               "{user.bio}"
             </Text>
           ) : (
-            <Text variant="caption" color={colors.textTertiary} style={{ marginTop: 8, fontStyle: 'italic', opacity: 0.6 }}>
+            <Text variant="caption" color={colors.textTertiary} style={{ marginTop: 8, fontStyle: 'italic', opacity: 0.7 }}>
               No biography written yet. Click "Update Biography" below to share your daily habit focus!
             </Text>
           )}
 
-          <Spacer size="xl" />
-
-          {/* User analytics statistics */}
-          <View style={[styles.statsDivider, { backgroundColor: colors.borderSubtle }]} />
+          <Spacer size="lg" />
+          <View style={[styles.statsDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' }]} />
           <Spacer size="md" />
-          
+
           <View style={styles.statsGrid}>
             <View style={styles.statCell}>
               <Text variant="h2" weight="bold" color={colors.text}>{user?.xp || 0}</Text>
               <Text variant="micro" weight="bold" color={colors.textTertiary}>TOTAL XP</Text>
             </View>
             <View style={styles.statCell}>
-              <Text variant="h2" weight="bold" color={colors.text}>{user?.streak || 0}🔥</Text>
+              <Text variant="h2" weight="bold" color={colors.primary}>{user?.streak || 0}🔥</Text>
               <Text variant="micro" weight="bold" color={colors.textTertiary}>STREAK</Text>
             </View>
             <View style={styles.statCell}>
@@ -168,7 +194,46 @@ export default function ProfileScreen() {
               <Text variant="micro" weight="bold" color={colors.textTertiary}>FREEZES</Text>
             </View>
           </View>
-        </Surface>
+        </GlassCard>
+
+        <Spacer size="lg" />
+
+        {/* 30-Day Consistency Heatmap Grid */}
+        <Text variant="caption" weight="bold" color={colors.textTertiary} style={styles.sectionTitle}>
+          30-DAY CONSISTENCY HEATMAP
+        </Text>
+
+        <GlassCard borderRadius="2xl" style={[styles.cabinetCard, { borderColor: 'rgba(255,255,255,0.05)' }]}>
+          <Text variant="micro" weight="bold" color={colors.textSecondary} style={{ marginBottom: 12 }}>
+            CONSISTENCY INTENSITY GRID
+          </Text>
+          <View style={styles.heatmapGrid}>
+            {heatmapData.map((data) => (
+              <View
+                key={data.day}
+                style={[
+                  styles.heatmapBlock,
+                  {
+                    backgroundColor: data.completed
+                      ? 'rgba(52, 211, 153, 0.65)'
+                      : isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+                    borderColor: data.completed ? 'rgba(52, 211, 153, 0.9)' : 'transparent',
+                    borderWidth: data.completed ? 1 : 0,
+                  }
+                ]}
+              />
+            ))}
+          </View>
+          <View style={styles.heatmapLegend}>
+            <Text variant="micro" color={colors.textTertiary}>Less Active</Text>
+            <View style={styles.legendScale}>
+              <View style={[styles.heatmapBlock, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' }]} />
+              <View style={[styles.heatmapBlock, { backgroundColor: 'rgba(52, 211, 153, 0.35)' }]} />
+              <View style={[styles.heatmapBlock, { backgroundColor: 'rgba(52, 211, 153, 0.65)' }]} />
+            </View>
+            <Text variant="micro" color={colors.textTertiary}>Streak Max</Text>
+          </View>
+        </GlassCard>
 
         <Spacer size="lg" />
 
@@ -177,13 +242,17 @@ export default function ProfileScreen() {
           ACHIEVEMENTS CABINET
         </Text>
 
-        <Surface elevation="raised" borderRadius="2xl" bordered style={styles.cabinetCard}>
+        <GlassCard borderRadius="2xl" style={[styles.cabinetCard, { borderColor: 'rgba(255,255,255,0.05)' }]}>
           {user?.badges && user.badges.length > 0 ? (
             <View style={styles.badgeRow}>
               {user.badges.map((badge: any) => {
                 return (
-                  <View key={badge.id} style={[styles.badgeItem, { backgroundColor: colors.surfaceElevated, borderColor: colors.borderSubtle }]}>
-                    <Text style={{ fontSize: 28 }}>{badge.icon}</Text>
+                  <View key={badge.id} style={[styles.badgeItem, { backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', borderColor: colors.borderSubtle }]}>
+                    <LinearGradient
+                      colors={['rgba(255, 75, 43, 0.05)', 'transparent']}
+                      style={[StyleSheet.absoluteFill, { borderRadius: radius.md }]}
+                    />
+                    <Text style={{ fontSize: 28, textShadowColor: 'rgba(255,75,43,0.3)', textShadowRadius: 6, textShadowOffset: { width: 0, height: 0 } }}>{badge.icon}</Text>
                     <Spacer size="xs" />
                     <Text variant="micro" weight="bold" color={colors.text} align="center" numberOfLines={1}>
                       {badge.title}
@@ -203,7 +272,7 @@ export default function ProfileScreen() {
               </Text>
             </View>
           )}
-        </Surface>
+        </GlassCard>
 
         <Spacer size="lg" />
 
@@ -212,7 +281,9 @@ export default function ProfileScreen() {
           UTILITIES
         </Text>
 
-        <Surface elevation="raised" borderRadius="xl" bordered style={styles.utilitiesCard}>
+        <GlassCard borderRadius="2xl" style={[styles.utilitiesCard, { borderColor: 'rgba(255,255,255,0.05)' }]}>
+
+          {/* Bio update btn */}
           <Pressable onPress={handleEditBio} style={styles.utilityBtn}>
             <Sparkles size={18} color={colors.primary} style={{ marginRight: 12 }} />
             <Text variant="bodySmall" weight="bold" color={colors.text}>
@@ -222,13 +293,42 @@ export default function ProfileScreen() {
 
           <View style={{ height: 1, backgroundColor: colors.borderSubtle, marginHorizontal: 16 }} />
 
+          {/* Premium Theme Switcher Segment */}
+          <View style={styles.themeUtilityRow}>
+            <View style={styles.themeLabelCol}>
+              <Moon size={18} color={colors.accentSecondary} style={{ marginRight: 12 }} />
+              <Text variant="bodySmall" weight="bold" color={colors.text}>
+                Theme
+              </Text>
+            </View>
+            <View style={styles.toggleRow}>
+              {(['light', 'dark', 'auto'] as const).map((t) => (
+                <Pressable
+                  key={t}
+                  onPress={() => setTheme(t)}
+                  style={[
+                    styles.themeToggleBtn,
+                    {
+                      backgroundColor: theme === t ? colors.primary : isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
+                      borderColor: theme === t ? colors.primary : colors.borderSubtle,
+                    }
+                  ]}
+                >
+                  <Text variant="micro" weight="bold" color={theme === t ? colors.surface : colors.textSecondary}>
+                    {t.toUpperCase()}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
           <Pressable onPress={handleLogout} style={styles.utilityBtn}>
             <LogOut size={18} color={colors.error} style={{ marginRight: 12 }} />
             <Text variant="bodySmall" weight="bold" color={colors.error}>
               Logout
             </Text>
           </Pressable>
-        </Surface>
+        </GlassCard>
 
         <Spacer size="5xl" />
       </ScrollView>
@@ -239,6 +339,10 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  ambientOrb: {
+    position: 'absolute',
+    borderRadius: 9999,
   },
   header: {
     paddingHorizontal: 16,
@@ -253,15 +357,7 @@ const styles = StyleSheet.create({
     padding: 20,
     position: 'relative',
     overflow: 'hidden',
-  },
-  glowingOrbs: {
-    position: 'absolute',
-    top: -50,
-    right: -50,
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    opacity: 0.08,
+    borderWidth: 1,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -272,7 +368,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 4,
-    backgroundColor: 'rgba(255, 75, 43, 0.1)',
   },
   statsDivider: {
     width: '100%',
@@ -290,9 +385,11 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     marginBottom: 6,
     letterSpacing: 1,
+    marginTop: 16,
   },
   cabinetCard: {
     padding: 16,
+    borderWidth: 1,
   },
   badgeRow: {
     flexDirection: 'row',
@@ -310,6 +407,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 8,
     paddingHorizontal: 4,
+    position: 'relative',
+    overflow: 'hidden',
   },
   emptyCabinet: {
     padding: 24,
@@ -318,11 +417,56 @@ const styles = StyleSheet.create({
   },
   utilitiesCard: {
     overflow: 'hidden',
+    borderWidth: 1,
   },
   utilityBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 16,
+  },
+  themeUtilityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  themeLabelCol: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  themeToggleBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+  },
+  heatmapGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    justifyContent: 'center',
+    marginVertical: 4,
+  },
+  heatmapBlock: {
+    width: 22,
+    height: 22,
+    borderRadius: radius.xs,
+  },
+  heatmapLegend: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 14,
+    paddingHorizontal: 4,
+  },
+  legendScale: {
+    flexDirection: 'row',
+    gap: 4,
   },
 });

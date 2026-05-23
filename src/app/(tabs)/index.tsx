@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, ScrollView, RefreshControl, Platform, TextInput } from 'react-native';
+import { StyleSheet, View, ScrollView, RefreshControl, Platform, TextInput, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/authStore';
@@ -8,6 +8,7 @@ import { useTheme } from '../../design-system/theme/ThemeProvider';
 import { useDialog } from '../../design-system/theme/DialogProvider';
 import { Text } from '../../design-system/primitives/Text';
 import { Surface } from '../../design-system/primitives/Surface';
+import { GlassCard } from '../../design-system/primitives/GlassCard';
 import { Spacer } from '../../design-system/primitives/Spacer';
 import { StreakFlame } from '../../features/home/components/StreakFlame';
 import { XPRing } from '../../features/home/components/XPRing';
@@ -17,6 +18,8 @@ import { ChallengeCard } from '../../features/home/components/ChallengeCard';
 import { UserAvatar } from '../../components/common/UserAvatar';
 import ShareCard from '../../components/ShareCard';
 import { radius } from '../../design-system/tokens/radius';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Sparkles, Zap, Flame, Compass } from 'lucide-react-native';
 
 const generateCurrentWeekDays = (historyData?: any[]) => {
   const today = new Date();
@@ -48,7 +51,7 @@ const generateCurrentWeekDays = (historyData?: any[]) => {
 };
 
 export default function HomeScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, token, isAuthenticated, updateUser } = useAuthStore();
@@ -62,15 +65,12 @@ export default function HomeScreen() {
 
   const fetchHomeData = async () => {
     try {
-      // 1. Fetch today's challenge
       const resChallenge = await api.get('/challenges/today');
       setTodayChallenge(resChallenge.data);
 
-      // 2. Fetch fresh user profile details
       const resProfile = await api.get('/users/profile');
       updateUser(resProfile.data);
 
-      // 3. Fetch challenge history to check today's status
       const resHistory = await api.get('/challenges/history');
       const hasCompleted = resHistory.data.some((h: any) => {
         if (!h.completed) return false;
@@ -115,11 +115,9 @@ export default function HomeScreen() {
         prev.map((d) => (d.isToday ? { ...d, completed: true } : d))
       );
       
-      // Refresh user details to update XP, streaks, level!
       const resProfile = await api.get('/users/profile');
       updateUser(resProfile.data);
 
-      // Trigger the cinematic share card popup!
       setShareVisible(true);
     } catch (e) {
       console.warn('Failed to complete challenge:', e);
@@ -182,10 +180,35 @@ export default function HomeScreen() {
     return 'Good evening';
   };
 
+  // Calculate consistency momentum rating
+  const completedCount = weeklyConsistency.filter((d) => d.completed).length;
+  const momentumScore = Math.min(100, Math.max(15, Math.round((completedCount / weeklyConsistency.length) * 100) + (user?.streak || 0) * 3));
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Home Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8, borderColor: colors.borderSubtle }]}>
+      
+      {/* Cinematic Ambient Background Mesh Orbs */}
+      <View style={StyleSheet.absoluteFill}>
+        <LinearGradient
+          colors={isDark ? ['#08080C', '#0E0E12'] : ['#F4F5F7', '#EBEFF3']}
+          style={StyleSheet.absoluteFill}
+        />
+        {isDark && (
+          <>
+            <LinearGradient
+              colors={['rgba(255, 75, 43, 0.08)', 'transparent']}
+              style={[styles.ambientOrb, { top: -80, left: -60, width: 280, height: 280 }]}
+            />
+            <LinearGradient
+              colors={['rgba(138, 35, 135, 0.06)', 'transparent']}
+              style={[styles.ambientOrb, { bottom: 120, right: -80, width: 340, height: 340 }]}
+            />
+          </>
+        )}
+      </View>
+
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: insets.top + 8, borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' }]}>
         <View style={styles.headerLeft}>
           <UserAvatar uri={user?.avatar} username={user?.username} size="sm" borderRankColor={colors.primary} />
           <View style={styles.greetingText}>
@@ -204,41 +227,55 @@ export default function HomeScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 90 + insets.bottom }]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
       >
         <Spacer size="md" />
 
-        {/* Level and XP Hero widget */}
-        <Surface elevation="raised" borderRadius="2xl" bordered style={styles.xpHeroCard}>
+        {/* Master XP Progression Hub Card */}
+        <GlassCard borderRadius="2xl" intensity="high" style={[styles.xpHeroCard, { borderColor: 'rgba(255,255,255,0.06)' }]}>
           <View style={styles.heroRow}>
             <View style={styles.heroRing}>
-              <XPRing xp={user?.xp || 0} level={user?.level || 1} size={110} />
+              <XPRing xp={user?.xp || 0} level={user?.level || 1} size={114} />
             </View>
             <View style={styles.heroStats}>
-              <Text variant="h3" weight="bold" color={colors.text}>
-                Streak Level Progress
+              <View style={styles.questTitleRow}>
+                <Sparkles size={14} color={colors.primary} />
+                <Text variant="h3" weight="bold" color={colors.text}>
+                  Habit Hub Level
+                </Text>
+              </View>
+              <Text variant="caption" color={colors.textSecondary} style={{ marginTop: 2, lineHeight: 15 }}>
+                Securing quests increases your streak level and unlocks new capabilities.
               </Text>
-              <Text variant="caption" color={colors.textSecondary} style={{ marginTop: 2, lineHeight: 16 }}>
-                Each daily complete compounds {user?.level === 1 ? '1.0x' : `${(1 + (user?.level || 1) * 0.1).toFixed(1)}x`} XP multiplier. Collect badges at milestones.
-              </Text>
+              
               <Spacer size="sm" />
-              <View style={styles.miniStatsRow}>
-                <View>
-                  <Text variant="caption" color={colors.textTertiary}>Longest Streak</Text>
-                  <Text variant="bodySmall" weight="bold" color={colors.text}>{user?.longestStreak || 0} Days</Text>
+
+              {/* Dynamic Momentum Score Widget */}
+              <View style={styles.momentumContainer}>
+                <View style={styles.momentumLabels}>
+                  <Text variant="micro" weight="bold" color={colors.textTertiary}>MOMENTUM RATE</Text>
+                  <Text variant="micro" weight="bold" color={colors.primary}>{momentumScore}% MAX</Text>
                 </View>
-                <View style={[styles.statDivider, { backgroundColor: colors.borderSubtle }]} />
-                <View>
-                  <Text variant="caption" color={colors.textTertiary}>Streak Freezes</Text>
-                  <Text variant="bodySmall" weight="bold" color={colors.text}>{user?.streakFreezes || 0}</Text>
+                <View style={[styles.momentumTrack, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' }]}>
+                  <View style={[styles.momentumBar, { width: `${momentumScore}%`, backgroundColor: colors.primary }]} />
                 </View>
+              </View>
+
+              <Spacer size="xs" />
+
+              {/* Daily Energy Indicator */}
+              <View style={styles.energyRow}>
+                <Zap size={12} color="#00F2FE" fill="#00F2FE" />
+                <Text variant="micro" weight="bold" color={colors.textSecondary}>
+                  DAILY FUEL: {completedToday ? '5/5 UNITS FULL' : '3/5 UNITS ACTIVE'}
+                </Text>
               </View>
             </View>
           </View>
-        </Surface>
+        </GlassCard>
 
         <Spacer size="md" />
 
@@ -249,12 +286,14 @@ export default function HomeScreen() {
 
         {/* Today's Challenge Section */}
         <View style={styles.sectionHeader}>
-          <Text variant="h3" weight="bold" color={colors.text}>
-            Today's Commit
-          </Text>
-          <Text variant="caption" color={colors.textTertiary}>
-            Rotates every 24 hours
-          </Text>
+          <View style={styles.sectionTitleCol}>
+            <Text variant="h2" weight="display" color={colors.text}>
+              Today's Quest
+            </Text>
+            <Text variant="micro" weight="bold" color={colors.textSecondary} style={{ letterSpacing: 0.5 }}>
+              ROTATES EVERY 24 HOURS
+            </Text>
+          </View>
         </View>
 
         {todayChallenge ? (
@@ -266,11 +305,12 @@ export default function HomeScreen() {
             onShare={() => setShareVisible(true)}
           />
         ) : (
-          <Surface elevation="raised" borderRadius="xl" bordered style={styles.emptyCard}>
+          <GlassCard borderRadius="2xl" style={styles.emptyCard}>
+            <Compass size={32} color={colors.textTertiary} style={{ opacity: 0.4, marginBottom: 8 }} />
             <Text variant="bodySmall" color={colors.textSecondary} align="center">
               All caught up! Next rotating daily challenge becomes available at midnight.
             </Text>
-          </Surface>
+          </GlassCard>
         )}
 
         <Spacer size="md" />
@@ -298,6 +338,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  ambientOrb: {
+    position: 'absolute',
+    borderRadius: 9999,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -305,6 +349,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
+    zIndex: 10,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -317,9 +362,11 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingBottom: 100, // Space for floating tab bar
+    zIndex: 5,
   },
   xpHeroCard: {
     padding: 16,
+    borderWidth: 1,
   },
   heroRow: {
     flexDirection: 'row',
@@ -327,8 +374,8 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   heroRing: {
-    width: 110,
-    height: 138,
+    width: 114,
+    height: 142,
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,
@@ -337,26 +384,50 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
-  miniStatsRow: {
+  questTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
-    marginTop: 6,
+    gap: 6,
   },
-  statDivider: {
-    width: 1,
-    height: 24,
+  momentumContainer: {
+    width: '100%',
+  },
+  momentumLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  momentumTrack: {
+    height: 6,
+    borderRadius: 3,
+    width: '100%',
+    overflow: 'hidden',
+  },
+  momentumBar: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  energyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
-    marginTop: 8,
-    marginBottom: 4,
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  sectionTitleCol: {
+    gap: 2,
   },
   emptyCard: {
     padding: 32,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
   },
 });

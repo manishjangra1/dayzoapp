@@ -4,6 +4,13 @@ import { Image } from 'expo-image';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
 import { Text } from '../../design-system/primitives/Text';
 import { radius } from '../../design-system/tokens/radius';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 
 export interface UserAvatarProps {
   uri?: string;
@@ -21,6 +28,25 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
   borderRankColor,
 }) => {
   const { colors } = useTheme();
+  
+  const auraScale = useSharedValue(1);
+
+  React.useEffect(() => {
+    auraScale.value = withRepeat(
+      withSequence(
+        withTiming(1.05, { duration: 1400 }),
+        withTiming(1.0, { duration: 1400 })
+      ),
+      -1,
+      true
+    );
+  }, []);
+
+  const animatedAuraStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: auraScale.value }],
+    };
+  });
 
   const getDimensions = () => {
     switch (size) {
@@ -75,9 +101,28 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
   };
 
   const ringColor = borderRankColor || colors.border;
+  const isPremiumRank = !!borderRankColor;
 
   return (
     <View style={[styles.container, { width: dimensions + ring * 2, height: dimensions + ring * 2 }]}>
+      
+      {/* Dynamic Animated Pulse Aura backing */}
+      {isPremiumRank && (
+        <Animated.View
+          style={[
+            styles.auraBacking,
+            {
+              width: dimensions + ring * 2 + 4,
+              height: dimensions + ring * 2 + 4,
+              borderRadius: (dimensions + ring * 2 + 4) / 2,
+              borderColor: borderRankColor,
+              shadowColor: borderRankColor,
+            },
+            animatedAuraStyle,
+          ]}
+        />
+      )}
+
       {/* Outer Level Ring border */}
       <View
         style={[
@@ -124,6 +169,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
+  },
+  auraBacking: {
+    position: 'absolute',
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    opacity: 0.5,
+    ...Platform.select({
+      ios: {
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 6,
+      },
+    }),
   },
   initialsContainer: {
     justifyContent: 'center',

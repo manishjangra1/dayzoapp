@@ -86,12 +86,12 @@ export const amoledColors: ColorTheme = {
   glow: 'rgba(255, 75, 43, 0.4)',
 };
 
-export type ThemeType = 'light' | 'dark' | 'amoled';
+export type ThemeType = 'light' | 'dark' | 'auto';
 
 export const colors = {
   light: lightColors,
   dark: darkColors,
-  amoled: amoledColors,
+  auto: darkColors, // fallback; active colors are resolved dynamically in ThemeProvider based on OS scheme
   // Brand colors
   brand: {
     orange: '#FF4B2B',
