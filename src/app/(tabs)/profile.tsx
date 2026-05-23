@@ -252,7 +252,19 @@ export default function ProfileScreen() {
                       colors={['rgba(255, 75, 43, 0.05)', 'transparent']}
                       style={[StyleSheet.absoluteFill, { borderRadius: radius.md }]}
                     />
-                    <Text style={{ fontSize: 28, textShadowColor: 'rgba(255,75,43,0.3)', textShadowRadius: 6, textShadowOffset: { width: 0, height: 0 } }}>{badge.icon}</Text>
+                    <Text
+                      variant="h1"
+                      align="center"
+                      style={{
+                        fontSize: 28,
+                        lineHeight: 38,
+                        textShadowColor: 'rgba(255,75,43,0.3)',
+                        textShadowRadius: 6,
+                        textShadowOffset: { width: 0, height: 0 },
+                      }}
+                    >
+                      {badge.icon}
+                    </Text>
                     <Spacer size="xs" />
                     <Text variant="micro" weight="bold" color={colors.text} align="center" numberOfLines={1}>
                       {badge.title}
@@ -405,10 +417,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
+    paddingVertical: 12,
     paddingHorizontal: 4,
     position: 'relative',
-    overflow: 'hidden',
   },
   emptyCabinet: {
     padding: 24,

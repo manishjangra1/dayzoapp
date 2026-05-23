@@ -61,84 +61,67 @@ export default function LeaderboardScreen() {
   const top3 = list.slice(0, 3);
   const remainder = list.slice(3);
 
-  // Staggered rank row component
+  // Ranks row component
   const StaggeredRankRow = ({ item, rank, index }: { item: any; rank: number; index: number }) => {
-    const fadeVal = useSharedValue(0);
-    const slideVal = useSharedValue(16);
-
-    useEffect(() => {
-      fadeVal.value = withDelay(index * 40, withTiming(1, { duration: 350 }));
-      slideVal.value = withDelay(index * 40, withSpring(0, { damping: 12, stiffness: 100 }));
-    }, [index]);
-
-    const animatedStyle = useAnimatedStyle(() => {
-      return {
-        opacity: fadeVal.value,
-        transform: [{ translateY: slideVal.value }],
-      };
-    });
-
     // Mock deterministic rank movement
     const shiftHash = (item.username.charCodeAt(0) + item.username.length) % 3;
     const movement = shiftHash === 0 ? 'up' : shiftHash === 1 ? 'down' : 'stable';
 
     return (
-      <Animated.View style={animatedStyle}>
-        <GlassCard
-          borderRadius="xl"
-          intensity="low"
-          style={[
-            styles.rankRowCard,
-            {
-              borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-              backgroundColor: isDark ? 'rgba(20, 20, 26, 0.4)' : 'rgba(255,255,255,0.7)',
-            }
-          ]}
-        >
-          <View style={styles.rankRowLeft}>
-            <View style={styles.rankBadgeCell}>
-              <Text variant="bodySmall" weight="bold" color={colors.textSecondary} style={styles.rankNum}>
-                {rank}
-              </Text>
-              
-              {/* Dynamic shift indicator */}
-              {movement === 'up' ? (
-                <ArrowUp size={10} color="#10B981" />
-              ) : movement === 'down' ? (
-                <ArrowDown size={10} color="#EF4444" />
-              ) : (
-                <Minus size={10} color={colors.textTertiary} />
-              )}
-            </View>
-
-            <UserAvatar uri={item.avatar} username={item.username} size="sm" borderRankColor="rgba(255,255,255,0.15)" />
+      <GlassCard
+        borderRadius="xl"
+        intensity="low"
+        style={[
+          styles.rankRowCard,
+          {
+            borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+            backgroundColor: isDark ? 'rgba(20, 20, 26, 0.4)' : 'rgba(255,255,255,0.7)',
+          }
+        ]}
+      >
+        <View style={styles.rankRowLeft}>
+          <View style={styles.rankBadgeCell}>
+            <Text variant="bodySmall" weight="bold" color={colors.textSecondary} style={styles.rankNum}>
+              {rank}
+            </Text>
             
-            <View style={styles.rankInfo}>
-              <Text variant="bodySmall" weight="bold" color={colors.text}>
-                @{item.username}
-              </Text>
-              <Text variant="micro" color={colors.textSecondary} style={{ opacity: 0.7 }}>
-                Level {item.level || 1} • {item.title || 'Rookie'}
-              </Text>
-            </View>
+            {/* Dynamic shift indicator */}
+            {movement === 'up' ? (
+              <ArrowUp size={10} color="#10B981" />
+            ) : movement === 'down' ? (
+              <ArrowDown size={10} color="#EF4444" />
+            ) : (
+              <Minus size={10} color={colors.textTertiary} />
+            )}
           </View>
 
-          <View style={styles.rankRowRight}>
-            <View style={[styles.statBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)' }]}>
-              <Zap size={11} color={colors.primary} fill={colors.primary} />
-              <Text variant="micro" weight="bold" color={colors.text}>
-                {item.xp} XP
-              </Text>
-            </View>
-            <View style={[styles.statBadge, { backgroundColor: 'rgba(255, 75, 43, 0.08)' }]}>
-              <Flame size={11} color="#FF4B2B" fill="#FF4B2B" />
-              <Text variant="micro" weight="bold" color="#FF4B2B">
-                {item.streak || 0}D
-              </Text>
-            </View>
+          <UserAvatar uri={item.avatar} username={item.username} size="sm" borderRankColor="rgba(255,255,255,0.15)" />
+          
+          <View style={styles.rankInfo}>
+            <Text variant="bodySmall" weight="bold" color={colors.text}>
+              @{item.username}
+            </Text>
+            <Text variant="micro" color={colors.textSecondary} style={{ opacity: 0.7 }}>
+              Level {item.level || 1} • {item.title || 'Rookie'}
+            </Text>
           </View>
-        </GlassCard>
-      </Animated.View>
+        </View>
+
+        <View style={styles.rankRowRight}>
+          <View style={[styles.statBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)' }]}>
+            <Zap size={11} color={colors.primary} fill={colors.primary} />
+            <Text variant="micro" weight="bold" color={colors.text}>
+              {item.xp} XP
+            </Text>
+          </View>
+          <View style={[styles.statBadge, { backgroundColor: 'rgba(255, 75, 43, 0.08)' }]}>
+            <Flame size={11} color="#FF4B2B" fill="#FF4B2B" />
+            <Text variant="micro" weight="bold" color="#FF4B2B">
+              {item.streak || 0}D
+            </Text>
+          </View>
+        </View>
+      </GlassCard>
     );
   };
 
@@ -257,7 +240,7 @@ export default function LeaderboardScreen() {
             {top3[0] && (
               <View style={[styles.podiumCol, styles.centerPillarWrapper]}>
                 <Crown size={24} color="#FFD700" fill="#FFD700" style={styles.crownIcon} />
-                <View style={[styles.avatarGlowHalo, { shadowColor: '#FFD700', shadowRadius: 10, shadowOpacity: 0.4 }]}>
+                <View style={styles.avatarGlowHalo}>
                   <UserAvatar uri={top3[0].avatar} username={top3[0].username} size="lg" borderRankColor="#FFD700" />
                 </View>
                 <Spacer size="xs" />
@@ -276,10 +259,6 @@ export default function LeaderboardScreen() {
                       height: 120,
                       borderColor: '#FFD700',
                       backgroundColor: 'rgba(255, 215, 0, 0.05)',
-                      shadowColor: '#FFD700',
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.2,
-                      shadowRadius: 12,
                     }
                   ]}
                 >
@@ -414,15 +393,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
     transform: [{ scale: 1.06 }],
   },
-  avatarGlowHalo: {
-    ...Platform.select({
-      ios: {
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 6,
-      },
-    }),
-  },
+  avatarGlowHalo: {},
   podiumPillar: {
     width: '90%',
     borderTopWidth: 2,
@@ -505,13 +476,5 @@ const styles = StyleSheet.create({
   },
   crownIcon: {
     marginBottom: 4,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#FFD700',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.6,
-        shadowRadius: 4,
-      },
-    }),
   },
 });

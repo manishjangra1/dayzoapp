@@ -192,122 +192,78 @@ export default function SquadsScreen() {
     }
   };
 
-  // Staggered member row component
+  // Teammate row component
   const StaggeredMemberRow = ({ member, index, total }: { member: SquadMember; index: number; total: number }) => {
-    const fadeVal = useSharedValue(0);
-    const slideVal = useSharedValue(12);
-
-    useEffect(() => {
-      fadeVal.value = withDelay(index * 60, withTiming(1, { duration: 300 }));
-      slideVal.value = withDelay(index * 60, withSpring(0, { damping: 12, stiffness: 120 }));
-    }, [index]);
-
-    const animatedStyle = useAnimatedStyle(() => {
-      return {
-        opacity: fadeVal.value,
-        transform: [{ translateY: slideVal.value }],
-      };
-    });
-
     // Deterministic mock daily complete status
     const completedToday = member.xp % 3 === 0 || member.streak > 0;
 
     return (
-      <Animated.View style={animatedStyle}>
-        <View
-          style={[
-            styles.memberRow,
-            index < total - 1 && { borderBottomColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' },
-          ]}
-        >
-          <View style={styles.memberLeft}>
-            <UserAvatar
-              uri={member.avatar}
-              username={member.username}
-              size="sm"
-              borderRankColor={completedToday ? '#34D399' : undefined}
-            />
-            <View style={styles.memberInfo}>
-              <View style={styles.memberNameRow}>
-                <Text variant="bodySmall" weight="bold" color={colors.text}>
-                  @{member.username}
-                </Text>
-                {completedToday && (
-                  <View style={styles.completeStatusDot} />
-                )}
-              </View>
-              <Text variant="micro" color={colors.textTertiary}>
-                Level {member.level}
+      <View style={styles.memberRow}>
+        <View style={styles.memberLeft}>
+          <UserAvatar
+            uri={member.avatar}
+            username={member.username}
+            size="sm"
+            borderRankColor={completedToday ? '#34D399' : undefined}
+          />
+          <View style={styles.memberInfo}>
+            <View style={styles.memberNameRow}>
+              <Text variant="bodySmall" weight="bold" color={colors.text}>
+                @{member.username}
               </Text>
+              {completedToday && (
+                <View style={styles.completeStatusDot} />
+              )}
             </View>
-          </View>
-
-          <View style={styles.memberRight}>
-            <Text variant="bodySmall" weight="bold" color={colors.text}>
-              {member.xp} <Text variant="micro" color={colors.textTertiary}>XP</Text>
+            <Text variant="micro" color={colors.textTertiary}>
+              Level {member.level}
             </Text>
-            {member.streak > 0 && <StreakFlame streak={member.streak} size={14} showText={true} />}
           </View>
         </View>
-      </Animated.View>
+
+        <View style={styles.memberRight}>
+          <Text variant="bodySmall" weight="bold" color={colors.text}>
+            {member.xp} <Text variant="micro" color={colors.textTertiary}>XP</Text>
+          </Text>
+          {member.streak > 0 && <StreakFlame streak={member.streak} size={14} showText={true} />}
+        </View>
+      </View>
     );
   };
 
-  // Staggered leaderboard row component
+  // Leaderboard row component
   const StaggeredLeaderboardRow = ({ squad, index, total }: { squad: any; index: number; total: number }) => {
-    const fadeVal = useSharedValue(0);
-    const slideVal = useSharedValue(12);
-
-    useEffect(() => {
-      fadeVal.value = withDelay(index * 60, withTiming(1, { duration: 300 }));
-      slideVal.value = withDelay(index * 60, withSpring(0, { damping: 12, stiffness: 120 }));
-    }, [index]);
-
-    const animatedStyle = useAnimatedStyle(() => {
-      return {
-        opacity: fadeVal.value,
-        transform: [{ translateY: slideVal.value }],
-      };
-    });
-
     const isTopThree = index < 3;
     const rankColors = ['#FBBF24', '#9CA3AF', '#CD7F32']; // Gold, Silver, Bronze
 
     return (
-      <Animated.View style={animatedStyle}>
-        <View
-          style={[
-            styles.leaderboardRow,
-            index < total - 1 && { borderBottomColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' },
-          ]}
-        >
-          <View style={styles.leaderboardRowLeft}>
-            <Text
-              variant="bodySmall"
-              weight="bold"
-              color={isTopThree ? rankColors[index] : colors.textTertiary}
-              style={styles.rankNum}
-            >
-              {index + 1}
-            </Text>
-            <UserAvatar uri={squad.avatar} username={squad.name} size="sm" borderRankColor={isTopThree ? rankColors[index] : colors.accent} />
-            <View style={styles.rankInfo}>
-              <Text variant="bodySmall" weight="bold" color={colors.text}>
-                {squad.name}
-              </Text>
-              <Text variant="micro" color={colors.textTertiary}>
-                Alliance
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.leaderboardRowRight}>
+      <View style={styles.leaderboardRow}>
+        <View style={styles.leaderboardRowLeft}>
+          <Text
+            variant="bodySmall"
+            weight="bold"
+            color={isTopThree ? rankColors[index] : colors.textTertiary}
+            style={styles.rankNum}
+          >
+            {index + 1}
+          </Text>
+          <UserAvatar uri={squad.avatar} username={squad.name} size="sm" borderRankColor={isTopThree ? rankColors[index] : colors.accent} />
+          <View style={styles.rankInfo}>
             <Text variant="bodySmall" weight="bold" color={colors.text}>
-              {squad.xp} <Text variant="micro" color={colors.textTertiary}>XP</Text>
+              {squad.name}
+            </Text>
+            <Text variant="micro" color={colors.textTertiary}>
+              Alliance
             </Text>
           </View>
         </View>
-      </Animated.View>
+
+        <View style={styles.leaderboardRowRight}>
+          <Text variant="bodySmall" weight="bold" color={colors.text}>
+            {squad.xp} <Text variant="micro" color={colors.textTertiary}>XP</Text>
+          </Text>
+        </View>
+      </View>
     );
   };
 
@@ -671,7 +627,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderBottomWidth: 1,
   },
   memberLeft: {
     flexDirection: 'row',
@@ -709,7 +664,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderBottomWidth: 1,
   },
   leaderboardRowLeft: {
     flexDirection: 'row',
