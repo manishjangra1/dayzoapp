@@ -14,6 +14,7 @@ import { ConsistencyMeter } from '../../features/home/components/ConsistencyMete
 import { MotivationBanner } from '../../features/home/components/MotivationBanner';
 import { ChallengeCard } from '../../features/home/components/ChallengeCard';
 import { UserAvatar } from '../../components/common/UserAvatar';
+import ShareCard from '../../components/ShareCard';
 
 export default function HomeScreen() {
   const { colors } = useTheme();
@@ -65,6 +66,8 @@ export default function HomeScreen() {
     fetchHomeData();
   };
 
+  const [shareVisible, setShareVisible] = useState(false);
+
   const handleCompleteChallenge = async () => {
     if (!todayChallenge) return;
     try {
@@ -75,6 +78,9 @@ export default function HomeScreen() {
       // Refresh user details to update XP, streaks, level!
       const resProfile = await api.get('/users/profile');
       updateUser(resProfile.data);
+
+      // Trigger the cinematic share card popup!
+      setShareVisible(true);
     } catch (e) {
       console.warn('Failed to complete challenge:', e);
     } finally {
@@ -170,6 +176,7 @@ export default function HomeScreen() {
             completed={completedToday}
             onComplete={handleCompleteChallenge}
             actionLoading={actionLoading}
+            onShare={() => setShareVisible(true)}
           />
         ) : (
           <Surface elevation="raised" borderRadius="xl" bordered style={styles.emptyCard}>
@@ -186,6 +193,16 @@ export default function HomeScreen() {
 
         <Spacer size="5xl" />
       </ScrollView>
+
+      <ShareCard
+        visible={shareVisible}
+        onClose={() => setShareVisible(false)}
+        username={user?.username || 'user'}
+        streak={user?.streak || 0}
+        xp={todayChallenge?.xpReward || 15}
+        levelTitle={user?.title || 'Rookie'}
+        challengeTitle={todayChallenge?.title || 'Daily Commit'}
+      />
     </View>
   );
 }

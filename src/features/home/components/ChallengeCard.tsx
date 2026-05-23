@@ -30,6 +30,7 @@ interface ChallengeCardProps {
   completed?: boolean;
   onComplete?: () => void;
   actionLoading?: boolean;
+  onShare?: () => void;
 }
 
 export const ChallengeCard: React.FC<ChallengeCardProps> = ({
@@ -37,6 +38,7 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({
   completed = false,
   onComplete,
   actionLoading = false,
+  onShare,
 }) => {
   const { colors, isDark } = useTheme();
   const scale = useSharedValue(1);
@@ -126,12 +128,23 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({
         {/* Footer Actions */}
         <View style={styles.footer}>
           {completed ? (
-            <Surface elevation="raised" borderRadius="md" style={styles.completedBanner}>
-              <CheckCircle2 size={18} color={colors.success} />
-              <Text variant="bodySmall" weight="bold" color={colors.success} style={styles.completedText}>
-                Day Complete. Keep the momentum going!
-              </Text>
-            </Surface>
+            <View style={{ gap: 8, width: '100%' }}>
+              <Surface elevation="raised" borderRadius="md" style={styles.completedBanner}>
+                <CheckCircle2 size={18} color={colors.success} />
+                <Text variant="bodySmall" weight="bold" color={colors.success} style={styles.completedText}>
+                  Day Complete. Keep the momentum going!
+                </Text>
+              </Surface>
+              {onShare && (
+                <AnimatedButton
+                  title="Share Achievement"
+                  onPress={onShare}
+                  variant="secondary"
+                  borderRadius="md"
+                  style={{ width: '100%', paddingVertical: 10 }}
+                />
+              )}
+            </View>
           ) : (
             <AnimatedButton
               title="Complete Challenge"
