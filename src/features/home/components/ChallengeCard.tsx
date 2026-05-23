@@ -5,7 +5,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
-import { Clock, Zap, CheckCircle2, ChevronRight } from 'lucide-react-native';
+import { Clock, Zap, CheckCircle2, ChevronRight, Share2 } from 'lucide-react-native';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { Text } from '../../../design-system/primitives/Text';
 import { GlassCard } from '../../../design-system/primitives/GlassCard';
@@ -128,21 +128,28 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({
         {/* Footer Actions */}
         <View style={styles.footer}>
           {completed ? (
-            <View style={{ gap: 8, width: '100%' }}>
+            <View style={styles.completedRow}>
               <Surface elevation="raised" borderRadius="md" style={styles.completedBanner}>
                 <CheckCircle2 size={18} color={colors.success} />
-                <Text variant="bodySmall" weight="bold" color={colors.success} style={styles.completedText}>
-                  Day Complete. Keep the momentum going!
+                <Text variant="bodySmall" weight="bold" color={colors.success} style={styles.completedText} numberOfLines={1} ellipsizeMode="tail">
+                  Day Complete. Keep it up!
                 </Text>
               </Surface>
               {onShare && (
-                <AnimatedButton
-                  title="Share Achievement"
+                <Pressable
                   onPress={onShare}
-                  variant="secondary"
-                  borderRadius="md"
-                  style={{ width: '100%', paddingVertical: 10 }}
-                />
+                  style={({ pressed }) => [
+                    styles.shareIconBtn,
+                    {
+                      backgroundColor: isDark ? 'rgba(255, 75, 43, 0.1)' : 'rgba(255, 75, 43, 0.05)',
+                      borderColor: colors.primary,
+                      borderWidth: 1,
+                      opacity: pressed ? 0.8 : 1,
+                    }
+                  ]}
+                >
+                  <Share2 size={22} color={colors.primary} />
+                </Pressable>
               )}
             </View>
           ) : (
@@ -219,7 +226,14 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingVertical: 12,
   },
+  completedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    width: '100%',
+  },
   completedBanner: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -228,6 +242,13 @@ const styles = StyleSheet.create({
     gap: 8,
     borderWidth: 1,
     borderColor: 'rgba(16, 185, 129, 0.15)',
+  },
+  shareIconBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   completedText: {
     marginLeft: 4,

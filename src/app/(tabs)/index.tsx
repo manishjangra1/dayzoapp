@@ -16,6 +16,35 @@ import { ChallengeCard } from '../../features/home/components/ChallengeCard';
 import { UserAvatar } from '../../components/common/UserAvatar';
 import ShareCard from '../../components/ShareCard';
 
+const generateCurrentWeekDays = (historyData?: any[]) => {
+  const today = new Date();
+  const dayOfToday = today.getDay();
+  const distanceToMonday = dayOfToday === 0 ? -6 : 1 - dayOfToday;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + distanceToMonday);
+  monday.setHours(0, 0, 0, 0);
+
+  const dayNames = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  return dayNames.map((dayName, idx) => {
+    const dayDate = new Date(monday);
+    dayDate.setDate(monday.getDate() + idx);
+    
+    const completed = historyData
+      ? historyData.some((h: any) => {
+          if (!h.completed) return false;
+          const compDate = new Date(h.createdAt);
+          return compDate.toDateString() === dayDate.toDateString();
+        })
+      : false;
+
+    return {
+      dayName,
+      completed,
+      isToday: dayDate.toDateString() === today.toDateString(),
+    };
+  });
+};
+
 export default function HomeScreen() {
   const { colors } = useTheme();
   const router = useRouter();
@@ -24,6 +53,7 @@ export default function HomeScreen() {
 
   const [todayChallenge, setTodayChallenge] = useState<any>(null);
   const [completedToday, setCompletedToday] = useState(false);
+  const [weeklyConsistency, setWeeklyConsistency] = useState<any[]>(() => generateCurrentWeekDays());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -47,6 +77,7 @@ export default function HomeScreen() {
         return compDate.toDateString() === today.toDateString();
       });
       setCompletedToday(hasCompleted);
+      setWeeklyConsistency(generateCurrentWeekDays(resHistory.data));
     } catch (e) {
       console.warn('Failed to load home details from API:', e);
     } finally {
@@ -74,6 +105,9 @@ export default function HomeScreen() {
       setActionLoading(true);
       await api.post('/challenges/complete');
       setCompletedToday(true);
+      setWeeklyConsistency((prev) =>
+        prev.map((d) => (d.isToday ? { ...d, completed: true } : d))
+      );
       
       // Refresh user details to update XP, streaks, level!
       const resProfile = await api.get('/users/profile');
@@ -189,7 +223,7 @@ export default function HomeScreen() {
         <Spacer size="md" />
 
         {/* Consistency Grid */}
-        <ConsistencyMeter />
+        <ConsistencyMeter days={weeklyConsistency} />
 
         <Spacer size="5xl" />
       </ScrollView>
