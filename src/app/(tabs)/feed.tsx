@@ -609,7 +609,7 @@ export default function SocialFeedScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
           }
         >
-          <Spacer size="md" />
+          <Spacer size="sm" />
 
           {/* Quick Connect Friends Widget */}
           <GlassCard borderRadius="2xl" style={[styles.addFriendCard, { borderColor: 'rgba(255,255,255,0.05)' }]}>
@@ -641,7 +641,7 @@ export default function SocialFeedScreen() {
             </View>
           </GlassCard>
 
-          <Spacer size="md" />
+          <Spacer size="sm" />
 
           {loadingFeed ? (
             <View style={styles.loadingContainer}>
@@ -1017,14 +1017,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   feedCard: {
-    padding: 16,
-    marginVertical: 6,
+    padding: 12,
+    marginVertical: 4,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   userInfo: {
     flexDirection: 'row',
@@ -1037,15 +1037,15 @@ const styles = StyleSheet.create({
     borderRadius: radius.xs,
   },
   completionBox: {
-    padding: 12,
-    marginBottom: 8,
+    padding: 10,
+    marginBottom: 6,
     borderWidth: 1,
   },
   reactionsShelf: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
-    marginBottom: 10,
+    marginBottom: 6,
   },
   reactionPill: {
     paddingHorizontal: 8,
@@ -1059,7 +1059,7 @@ const styles = StyleSheet.create({
   cardDivider: {
     width: '100%',
     height: 1,
-    marginVertical: 8,
+    marginVertical: 6,
     opacity: 0.8,
   },
   actionRow: {
@@ -1072,21 +1072,21 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emojiButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   commentsSection: {
-    marginTop: 8,
+    marginTop: 4,
   },
   commentRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   commentBubble: {
     flex: 1,
@@ -1098,14 +1098,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 8,
+    marginTop: 6,
   },
   commentInputWrapper: {
     flex: 1,
     borderWidth: 1,
     borderRadius: radius.md,
-    height: 38,
-    paddingHorizontal: 12,
+    height: 34,
+    paddingHorizontal: 10,
     justifyContent: 'center',
   },
   commentInput: {
@@ -1114,8 +1114,8 @@ const styles = StyleSheet.create({
     padding: 0,
   },
   commentSendBtn: {
-    width: 38,
-    height: 38,
+    width: 34,
+    height: 34,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
