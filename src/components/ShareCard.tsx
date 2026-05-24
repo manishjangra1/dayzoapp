@@ -202,7 +202,7 @@ export default function ShareCard({
               ]}
             />
 
-            <View style={[styles.cardContent, { padding: cardFormat === 'square' ? 16 : 28 }]}>
+            <View style={[styles.cardContent, { padding: cardFormat === 'square' ? 16 : 20 }]}>
               {/* Card Top: Branding */}
               <View style={styles.cardHeader}>
                 <View>
@@ -419,32 +419,32 @@ export default function ShareCard({
 
               {/* Card Bottom: Spotify-Wrapped statistics drawer */}
               <View style={[styles.wrappedMetricsBox, { backgroundColor: 'rgba(0,0,0,0.25)', borderColor: 'rgba(255,255,255,0.1)' }]}>
-                <View style={styles.metricCell}>
-                  <View style={styles.metricRow}>
-                    <Flame color={activeTheme.accentColor} fill={activeTheme.accentColor} size={14} style={{ marginRight: 4 }} />
-                    <Text variant="bodySmall" weight="bold" color={activeTheme.textColor}>{streak}</Text>
+                <View style={[styles.metricCell, { flex: cardFormat === 'story' ? 0.8 : 1 }]}>
+                  <View style={[styles.metricRow, { width: '100%', justifyContent: 'center' }]}>
+                    <Flame color={activeTheme.accentColor} fill={activeTheme.accentColor} size={cardFormat === 'story' ? 13 : 14} style={{ marginRight: 3, flexShrink: 0 }} />
+                    <Text variant="bodySmall" weight="bold" color={activeTheme.textColor} numberOfLines={1} style={{ fontSize: cardFormat === 'story' ? 12 : 14 }}>{streak}</Text>
                   </View>
-                  <Text variant="micro" weight="bold" color={activeTheme.textColor} style={{ opacity: 0.6 }}>STREAK</Text>
+                  <Text variant="micro" weight="bold" color={activeTheme.textColor} style={{ opacity: 0.6, fontSize: cardFormat === 'story' ? 8 : 9 }}>STREAK</Text>
                 </View>
                 
                 <View style={styles.metricsDivider} />
 
-                <View style={styles.metricCell}>
-                  <View style={styles.metricRow}>
-                    <Zap color={activeTheme.accentColor} size={14} style={{ marginRight: 4 }} />
-                    <Text variant="bodySmall" weight="bold" color={activeTheme.textColor}>+{xp}</Text>
+                <View style={[styles.metricCell, { flex: cardFormat === 'story' ? 0.8 : 1 }]}>
+                  <View style={[styles.metricRow, { width: '100%', justifyContent: 'center' }]}>
+                    <Zap color={activeTheme.accentColor} size={cardFormat === 'story' ? 13 : 14} style={{ marginRight: 3, flexShrink: 0 }} />
+                    <Text variant="bodySmall" weight="bold" color={activeTheme.textColor} numberOfLines={1} style={{ fontSize: cardFormat === 'story' ? 12 : 14 }}>+{xp}</Text>
                   </View>
-                  <Text variant="micro" weight="bold" color={activeTheme.textColor} style={{ opacity: 0.6 }}>XP</Text>
+                  <Text variant="micro" weight="bold" color={activeTheme.textColor} style={{ opacity: 0.6, fontSize: cardFormat === 'story' ? 8 : 9 }}>XP</Text>
                 </View>
 
                 <View style={styles.metricsDivider} />
 
-                <View style={styles.metricCell}>
-                  <View style={styles.metricRow}>
-                    <Award color={activeTheme.accentColor} size={14} style={{ marginRight: 4 }} />
-                    <Text variant="bodySmall" weight="bold" color={activeTheme.textColor} numberOfLines={1}>{levelTitle}</Text>
+                <View style={[styles.metricCell, { flex: cardFormat === 'story' ? 1.4 : 1 }]}>
+                  <View style={[styles.metricRow, { width: '100%', justifyContent: 'center' }]}>
+                    <Award color={activeTheme.accentColor} size={cardFormat === 'story' ? 13 : 14} style={{ marginRight: 3, flexShrink: 0 }} />
+                    <Text variant="bodySmall" weight="bold" color={activeTheme.textColor} numberOfLines={1} style={{ flexShrink: 1, fontSize: cardFormat === 'story' ? 12 : 14 }}>{levelTitle}</Text>
                   </View>
-                  <Text variant="micro" weight="bold" color={activeTheme.textColor} style={{ opacity: 0.6 }}>LEVEL</Text>
+                  <Text variant="micro" weight="bold" color={activeTheme.textColor} style={{ opacity: 0.6, fontSize: cardFormat === 'story' ? 8 : 9 }}>LEVEL</Text>
                 </View>
               </View>
 
