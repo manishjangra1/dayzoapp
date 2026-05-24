@@ -19,6 +19,76 @@ import Animated, {
   withDelay,
 } from 'react-native-reanimated';
 
+interface StaggeredRankRowProps {
+  item: any;
+  rank: number;
+  index: number;
+}
+
+const StaggeredRankRow: React.FC<StaggeredRankRowProps> = React.memo(({ item, rank, index }) => {
+  const { colors, isDark } = useTheme();
+  // Mock deterministic rank movement
+  const shiftHash = (item.username.charCodeAt(0) + item.username.length) % 3;
+  const movement = shiftHash === 0 ? 'up' : shiftHash === 1 ? 'down' : 'stable';
+
+  return (
+    <GlassCard
+      borderRadius="xl"
+      intensity="low"
+      style={[
+        styles.rankRowCard,
+        {
+          borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+          backgroundColor: isDark ? 'rgba(20, 20, 26, 0.4)' : 'rgba(255,255,255,0.7)',
+        }
+      ]}
+    >
+      <View style={styles.rankRowLeft}>
+        <View style={styles.rankBadgeCell}>
+          <Text variant="bodySmall" weight="bold" color={colors.textSecondary} style={styles.rankNum}>
+            {rank}
+          </Text>
+          
+          {/* Dynamic shift indicator */}
+          {movement === 'up' ? (
+            <ArrowUp size={10} color="#10B981" />
+          ) : movement === 'down' ? (
+            <ArrowDown size={10} color="#EF4444" />
+          ) : (
+            <Minus size={10} color={colors.textTertiary} />
+          )}
+        </View>
+
+        <UserAvatar uri={item.avatar} username={item.username} size="sm" borderRankColor="rgba(255,255,255,0.15)" />
+        
+        <View style={styles.rankInfo}>
+          <Text variant="bodySmall" weight="bold" color={colors.text}>
+            @{item.username}
+          </Text>
+          <Text variant="micro" color={colors.textSecondary} style={{ opacity: 0.7 }}>
+            Level {item.level || 1} • {item.title || 'Rookie'}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.rankRowRight}>
+        <View style={[styles.statBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)' }]}>
+          <Zap size={11} color={colors.primary} fill={colors.primary} />
+          <Text variant="micro" weight="bold" color={colors.text}>
+            {item.xp} XP
+          </Text>
+        </View>
+        <View style={[styles.statBadge, { backgroundColor: 'rgba(255, 75, 43, 0.08)' }]}>
+          <Flame size={11} color="#FF4B2B" fill="#FF4B2B" />
+          <Text variant="micro" weight="bold" color="#FF4B2B">
+            {item.streak || 0}D
+          </Text>
+        </View>
+      </View>
+    </GlassCard>
+  );
+});
+
 export default function LeaderboardScreen() {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
@@ -60,70 +130,6 @@ export default function LeaderboardScreen() {
   const list = scope === 'global' ? globalLeaderboard : friendsLeaderboard;
   const top3 = list.slice(0, 3);
   const remainder = list.slice(3);
-
-  // Ranks row component
-  const StaggeredRankRow = ({ item, rank, index }: { item: any; rank: number; index: number }) => {
-    // Mock deterministic rank movement
-    const shiftHash = (item.username.charCodeAt(0) + item.username.length) % 3;
-    const movement = shiftHash === 0 ? 'up' : shiftHash === 1 ? 'down' : 'stable';
-
-    return (
-      <GlassCard
-        borderRadius="xl"
-        intensity="low"
-        style={[
-          styles.rankRowCard,
-          {
-            borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-            backgroundColor: isDark ? 'rgba(20, 20, 26, 0.4)' : 'rgba(255,255,255,0.7)',
-          }
-        ]}
-      >
-        <View style={styles.rankRowLeft}>
-          <View style={styles.rankBadgeCell}>
-            <Text variant="bodySmall" weight="bold" color={colors.textSecondary} style={styles.rankNum}>
-              {rank}
-            </Text>
-            
-            {/* Dynamic shift indicator */}
-            {movement === 'up' ? (
-              <ArrowUp size={10} color="#10B981" />
-            ) : movement === 'down' ? (
-              <ArrowDown size={10} color="#EF4444" />
-            ) : (
-              <Minus size={10} color={colors.textTertiary} />
-            )}
-          </View>
-
-          <UserAvatar uri={item.avatar} username={item.username} size="sm" borderRankColor="rgba(255,255,255,0.15)" />
-          
-          <View style={styles.rankInfo}>
-            <Text variant="bodySmall" weight="bold" color={colors.text}>
-              @{item.username}
-            </Text>
-            <Text variant="micro" color={colors.textSecondary} style={{ opacity: 0.7 }}>
-              Level {item.level || 1} • {item.title || 'Rookie'}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.rankRowRight}>
-          <View style={[styles.statBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)' }]}>
-            <Zap size={11} color={colors.primary} fill={colors.primary} />
-            <Text variant="micro" weight="bold" color={colors.text}>
-              {item.xp} XP
-            </Text>
-          </View>
-          <View style={[styles.statBadge, { backgroundColor: 'rgba(255, 75, 43, 0.08)' }]}>
-            <Flame size={11} color="#FF4B2B" fill="#FF4B2B" />
-            <Text variant="micro" weight="bold" color="#FF4B2B">
-              {item.streak || 0}D
-            </Text>
-          </View>
-        </View>
-      </GlassCard>
-    );
-  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

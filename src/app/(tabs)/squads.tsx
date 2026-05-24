@@ -40,6 +40,93 @@ interface Squad {
   members: SquadMember[];
 }
 
+interface StaggeredMemberRowProps {
+  member: SquadMember;
+  index: number;
+  total: number;
+}
+
+const StaggeredMemberRow: React.FC<StaggeredMemberRowProps> = React.memo(({ member, index, total }) => {
+  const { colors } = useTheme();
+  // Deterministic mock daily complete status
+  const completedToday = member.xp % 3 === 0 || member.streak > 0;
+
+  return (
+    <View style={styles.memberRow}>
+      <View style={styles.memberLeft}>
+        <UserAvatar
+          uri={member.avatar}
+          username={member.username}
+          size="sm"
+          borderRankColor={completedToday ? '#34D399' : undefined}
+        />
+        <View style={styles.memberInfo}>
+          <View style={styles.memberNameRow}>
+            <Text variant="bodySmall" weight="bold" color={colors.text}>
+              @{member.username}
+            </Text>
+            {completedToday && (
+              <View style={styles.completeStatusDot} />
+            )}
+          </View>
+          <Text variant="micro" color={colors.textTertiary}>
+            Level {member.level}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.memberRight}>
+        <Text variant="bodySmall" weight="bold" color={colors.text}>
+          {member.xp} <Text variant="micro" color={colors.textTertiary}>XP</Text>
+        </Text>
+        {member.streak > 0 && <StreakFlame streak={member.streak} size={14} showText={true} />}
+      </View>
+    </View>
+  );
+});
+
+interface StaggeredLeaderboardRowProps {
+  squad: any;
+  index: number;
+  total: number;
+}
+
+const StaggeredLeaderboardRow: React.FC<StaggeredLeaderboardRowProps> = React.memo(({ squad, index, total }) => {
+  const { colors } = useTheme();
+  const isTopThree = index < 3;
+  const rankColors = ['#FBBF24', '#9CA3AF', '#CD7F32']; // Gold, Silver, Bronze
+
+  return (
+    <View style={styles.leaderboardRow}>
+      <View style={styles.leaderboardRowLeft}>
+        <Text
+          variant="bodySmall"
+          weight="bold"
+          color={isTopThree ? rankColors[index] : colors.textTertiary}
+          style={styles.rankNum}
+        >
+          {index + 1}
+        </Text>
+        <UserAvatar uri={squad.avatar} username={squad.name} size="sm" borderRankColor={isTopThree ? rankColors[index] : colors.accent} />
+        <View style={styles.rankInfo}>
+          <Text variant="bodySmall" weight="bold" color={colors.text}>
+            {squad.name}
+          </Text>
+          <Text variant="micro" color={colors.textTertiary}>
+            Alliance
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.leaderboardRowRight}>
+        <Text variant="bodySmall" weight="bold" color={colors.text}>
+          {squad.xp} <Text variant="micro" color={colors.textTertiary}>XP</Text>
+        </Text>
+      </View>
+    </View>
+  );
+});
+
 export default function SquadsScreen() {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
@@ -191,81 +278,6 @@ export default function SquadsScreen() {
         primaryAction: { text: 'OK' }
       });
     }
-  };
-
-  // Teammate row component
-  const StaggeredMemberRow = ({ member, index, total }: { member: SquadMember; index: number; total: number }) => {
-    // Deterministic mock daily complete status
-    const completedToday = member.xp % 3 === 0 || member.streak > 0;
-
-    return (
-      <View style={styles.memberRow}>
-        <View style={styles.memberLeft}>
-          <UserAvatar
-            uri={member.avatar}
-            username={member.username}
-            size="sm"
-            borderRankColor={completedToday ? '#34D399' : undefined}
-          />
-          <View style={styles.memberInfo}>
-            <View style={styles.memberNameRow}>
-              <Text variant="bodySmall" weight="bold" color={colors.text}>
-                @{member.username}
-              </Text>
-              {completedToday && (
-                <View style={styles.completeStatusDot} />
-              )}
-            </View>
-            <Text variant="micro" color={colors.textTertiary}>
-              Level {member.level}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.memberRight}>
-          <Text variant="bodySmall" weight="bold" color={colors.text}>
-            {member.xp} <Text variant="micro" color={colors.textTertiary}>XP</Text>
-          </Text>
-          {member.streak > 0 && <StreakFlame streak={member.streak} size={14} showText={true} />}
-        </View>
-      </View>
-    );
-  };
-
-  // Leaderboard row component
-  const StaggeredLeaderboardRow = ({ squad, index, total }: { squad: any; index: number; total: number }) => {
-    const isTopThree = index < 3;
-    const rankColors = ['#FBBF24', '#9CA3AF', '#CD7F32']; // Gold, Silver, Bronze
-
-    return (
-      <View style={styles.leaderboardRow}>
-        <View style={styles.leaderboardRowLeft}>
-          <Text
-            variant="bodySmall"
-            weight="bold"
-            color={isTopThree ? rankColors[index] : colors.textTertiary}
-            style={styles.rankNum}
-          >
-            {index + 1}
-          </Text>
-          <UserAvatar uri={squad.avatar} username={squad.name} size="sm" borderRankColor={isTopThree ? rankColors[index] : colors.accent} />
-          <View style={styles.rankInfo}>
-            <Text variant="bodySmall" weight="bold" color={colors.text}>
-              {squad.name}
-            </Text>
-            <Text variant="micro" color={colors.textTertiary}>
-              Alliance
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.leaderboardRowRight}>
-          <Text variant="bodySmall" weight="bold" color={colors.text}>
-            {squad.xp} <Text variant="micro" color={colors.textTertiary}>XP</Text>
-          </Text>
-        </View>
-      </View>
-    );
   };
 
   return (

@@ -30,6 +30,106 @@ export interface FloatingTabBarProps {
   navigation: any;
 }
 
+interface TabItemProps {
+  route: any;
+  index: number;
+  isFocused: boolean;
+  colors: any;
+  navigation: any;
+}
+
+const TabItem: React.FC<TabItemProps> = React.memo(({
+  route,
+  index,
+  isFocused,
+  colors,
+  navigation,
+}) => {
+  const scale = useSharedValue(1);
+  const glowOpacity = useSharedValue(isFocused ? 1 : 0);
+
+  React.useEffect(() => {
+    glowOpacity.value = withTiming(isFocused ? 1 : 0, { duration: 250 });
+  }, [isFocused]);
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.82, { damping: 10, stiffness: 200 });
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { damping: 12, stiffness: 150 });
+  };
+
+  const animatedIconStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: scale.value }],
+    };
+  });
+
+  const animatedGlowStyle = useAnimatedStyle(() => {
+    return {
+      opacity: glowOpacity.value,
+      transform: [{ scale: withSpring(isFocused ? 1.1 : 0.8, { damping: 10, stiffness: 100 }) }],
+    };
+  });
+
+  const getIcon = () => {
+    const size = 20;
+    const activeColor = colors.primary;
+    const inactiveColor = colors.textSecondary;
+    const color = isFocused ? activeColor : inactiveColor;
+
+    switch (route.name) {
+      case 'index':
+        return <Flame size={size} color={color} fill={isFocused ? activeColor : 'transparent'} />;
+      case 'feed':
+        return <Users size={size} color={color} fill={isFocused ? `${activeColor}20` : 'transparent'} />;
+      case 'leaderboard':
+        return <Trophy size={size} color={color} fill={isFocused ? `${activeColor}20` : 'transparent'} />;
+      case 'squads':
+        return <Award size={size} color={color} fill={isFocused ? `${activeColor}20` : 'transparent'} />;
+      case 'profile':
+        return <User size={size} color={color} fill={isFocused ? `${activeColor}20` : 'transparent'} />;
+      default:
+        return <Flame size={size} color={color} />;
+    }
+  };
+
+  const onPress = () => {
+    const event = navigation.emit({
+      type: 'tabPress',
+      target: route.key,
+      canPreventDefault: true,
+    });
+
+    if (!isFocused && !event.defaultPrevented) {
+      navigation.navigate(route.name);
+    }
+  };
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      style={styles.tabItem}
+    >
+      <Animated.View style={[styles.iconContainer, animatedIconStyle]}>
+        {getIcon()}
+        
+        {/* Glowing dot below the active icon */}
+        <Animated.View
+          style={[
+            styles.glowingDot,
+            { backgroundColor: colors.primary },
+            animatedGlowStyle,
+          ]}
+        />
+      </Animated.View>
+    </Pressable>
+  );
+});
+
 export const FloatingTabBar: React.FC<FloatingTabBarProps> = ({
   state,
   descriptors,
@@ -55,93 +155,6 @@ export const FloatingTabBar: React.FC<FloatingTabBarProps> = ({
       transform: [{ translateX: translateX.value }],
     };
   });
-
-  const TabItem = ({ route, index }: { route: any; index: number }) => {
-    const isFocused = state.index === index;
-    const scale = useSharedValue(1);
-    const glowOpacity = useSharedValue(isFocused ? 1 : 0);
-
-    React.useEffect(() => {
-      glowOpacity.value = withTiming(isFocused ? 1 : 0, { duration: 250 });
-    }, [isFocused]);
-
-    const handlePressIn = () => {
-      scale.value = withSpring(0.82, { damping: 10, stiffness: 200 });
-    };
-
-    const handlePressOut = () => {
-      scale.value = withSpring(1, { damping: 12, stiffness: 150 });
-    };
-
-    const animatedIconStyle = useAnimatedStyle(() => {
-      return {
-        transform: [{ scale: scale.value }],
-      };
-    });
-
-    const animatedGlowStyle = useAnimatedStyle(() => {
-      return {
-        opacity: glowOpacity.value,
-        transform: [{ scale: withSpring(isFocused ? 1.1 : 0.8, { damping: 10, stiffness: 100 }) }],
-      };
-    });
-
-    const getIcon = () => {
-      const size = 20;
-      const activeColor = colors.primary;
-      const inactiveColor = colors.textSecondary;
-      const color = isFocused ? activeColor : inactiveColor;
-
-      switch (route.name) {
-        case 'index':
-          return <Flame size={size} color={color} fill={isFocused ? activeColor : 'transparent'} />;
-        case 'feed':
-          return <Users size={size} color={color} fill={isFocused ? `${activeColor}20` : 'transparent'} />;
-        case 'leaderboard':
-          return <Trophy size={size} color={color} fill={isFocused ? `${activeColor}20` : 'transparent'} />;
-        case 'squads':
-          return <Award size={size} color={color} fill={isFocused ? `${activeColor}20` : 'transparent'} />;
-        case 'profile':
-          return <User size={size} color={color} fill={isFocused ? `${activeColor}20` : 'transparent'} />;
-        default:
-          return <Flame size={size} color={color} />;
-      }
-    };
-
-    const onPress = () => {
-      const event = navigation.emit({
-        type: 'tabPress',
-        target: route.key,
-        canPreventDefault: true,
-      });
-
-      if (!isFocused && !event.defaultPrevented) {
-        navigation.navigate(route.name);
-      }
-    };
-
-    return (
-      <Pressable
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        style={styles.tabItem}
-      >
-        <Animated.View style={[styles.iconContainer, animatedIconStyle]}>
-          {getIcon()}
-          
-          {/* Glowing dot below the active icon */}
-          <Animated.View
-            style={[
-              styles.glowingDot,
-              { backgroundColor: colors.primary },
-              animatedGlowStyle,
-            ]}
-          />
-        </Animated.View>
-      </Pressable>
-    );
-  };
 
   return (
     <View style={[styles.container, { height: 76 + insets.bottom }]}>
@@ -179,13 +192,19 @@ export const FloatingTabBar: React.FC<FloatingTabBarProps> = ({
           ]}
         />
 
-        {state.routes.map((route: any, index: number) => (
-          <TabItem
-            key={route.key}
-            route={route}
-            index={index}
-          />
-        ))}
+        {state.routes.map((route: any, index: number) => {
+          const isFocused = state.index === index;
+          return (
+            <TabItem
+              key={route.key}
+              route={route}
+              index={index}
+              isFocused={isFocused}
+              colors={colors}
+              navigation={navigation}
+            />
+          );
+        })}
       </GlassCard>
     </View>
   );

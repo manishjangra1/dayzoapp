@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { StyleSheet, View, TextInput, Pressable, ScrollView, RefreshControl, Platform, ActivityIndicator, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Users, Plus, Zap, Heart, MessageSquare, Compass, Search, UserPlus, UserMinus, UserCheck, Send, Smile, X, Sparkles } from 'lucide-react-native';
@@ -89,6 +89,198 @@ const FloatingEmoji = ({ emoji, onComplete }: { emoji: string; onComplete: () =>
   );
 };
 
+interface FeedCardProps {
+  item: FeedItem;
+  floatingEmojis: { id: string; emoji: string }[];
+  removeFloatingReaction: (itemId: string, id: string) => void;
+  handleSendReaction: (targetUserId: string, itemId: string, emoji: string) => void;
+  onCommentPosted: (itemId: string, newComment: FeedComment) => void;
+}
+
+const FeedCard: React.FC<FeedCardProps> = React.memo(({
+  item,
+  floatingEmojis,
+  removeFloatingReaction,
+  handleSendReaction,
+  onCommentPosted,
+}) => {
+  const { colors, isDark } = useTheme();
+  const { user } = useAuthStore();
+  const [commentContent, setCommentContent] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const handlePostCommentLocal = async () => {
+    if (!commentContent.trim()) return;
+
+    try {
+      setSubmitting(true);
+      const resComment = await api.post('/social/comment', {
+        userChallengeId: item.id,
+        content: commentContent.trim(),
+      });
+
+      onCommentPosted(item.id, resComment.data);
+      setCommentContent('');
+    } catch (e) {
+      console.warn('Failed to post comment:', e);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const isHighStreakWin = item.user.streak > 0 && item.user.streak % 5 === 0;
+
+  return (
+    <View>
+      <GlassCard
+        borderRadius="2xl"
+        intensity="high"
+        style={[
+          styles.feedCard,
+          {
+            borderColor: isHighStreakWin ? 'rgba(138, 35, 135, 0.35)' : 'rgba(255, 255, 255, 0.06)',
+          }
+        ]}
+      >
+        {/* Milestone Purple Overlay for high streaks */}
+        {isHighStreakWin && (
+          <LinearGradient
+            colors={['rgba(138, 35, 135, 0.05)', 'transparent']}
+            style={[StyleSheet.absoluteFill, { borderRadius: radius.xl }]}
+          />
+        )}
+
+        {/* Active Floating Reactions Render */}
+        {floatingEmojis.map((react) => (
+          <FloatingEmoji
+            key={react.id}
+            emoji={react.emoji}
+            onComplete={() => removeFloatingReaction(item.id, react.id)}
+          />
+        ))}
+
+        {/* Header */}
+        <View style={styles.cardHeader}>
+          <View style={styles.userInfo}>
+            <UserAvatar uri={item.user.avatar} username={item.user.username} size="sm" borderRankColor={isHighStreakWin ? colors.accent : colors.primary} />
+            <View>
+              <View style={styles.userTitleRow}>
+                <Text variant="bodySmall" weight="bold" color={colors.text}>
+                  @{item.user.username}
+                </Text>
+                {isHighStreakWin && (
+                  <View style={[styles.milestoneBadge, { backgroundColor: colors.accent + '20' }]}>
+                    <Sparkles size={8} color={colors.accent} />
+                    <Text variant="micro" weight="bold" color={colors.accent}>FIRE WIN</Text>
+                  </View>
+                )}
+              </View>
+              <Text variant="micro" color={colors.textTertiary}>
+                Level {item.user.level || 1} • {item.user.streak || 0}🔥 Streak
+              </Text>
+            </View>
+          </View>
+          <View style={[styles.categoryBadge, { backgroundColor: isHighStreakWin ? colors.accent + '15' : colors.primary + '15' }]}>
+            <Text variant="micro" weight="bold" color={isHighStreakWin ? colors.accent : colors.primary}>
+              {item.challenge.category.toUpperCase()}
+            </Text>
+          </View>
+        </View>
+
+        {/* Quest complete detail */}
+        <Surface elevation="flat" borderRadius="lg" bordered style={[styles.completionBox, { backgroundColor: colors.surface }]}>
+          <Text variant="bodySmall" weight="bold" color={colors.text}>
+            Completed: {item.challenge.title}
+          </Text>
+          <Text variant="caption" color={colors.textSecondary} style={{ marginTop: 2, lineHeight: 18 }}>
+            {item.challenge.description}
+          </Text>
+        </Surface>
+
+        {/* Reactions Shelf */}
+        {item.reactions && item.reactions.length > 0 && (
+          <View style={styles.reactionsShelf}>
+            {item.reactions.slice(0, 4).map((react, rIdx) => (
+              <View key={rIdx} style={[styles.reactionPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)', borderColor: colors.borderSubtle }]}>
+                <Text style={[styles.reactionText, { color: colors.textSecondary }]}>
+                  {react.emoji} <Text style={{ fontSize: 9 }}>@{react.username}</Text>
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        <View style={[styles.cardDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }]} />
+
+        {/* Action emoji row */}
+        <View style={styles.actionRow}>
+          <View style={styles.reactionButtons}>
+            {['🔥', '👏', '💪', '👑'].map((emoji) => (
+              <Pressable
+                key={emoji}
+                onPress={() => handleSendReaction(item.user.id, item.id, emoji)}
+                style={({ pressed }) => [
+                  styles.emojiButton,
+                  {
+                    backgroundColor: pressed ? 'rgba(255, 75, 43, 0.08)' : isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                    borderColor: colors.borderSubtle,
+                  }
+                ]}
+              >
+                <Text style={{ fontSize: 13 }}>{emoji}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        {/* Comment Threads Section */}
+        <View style={[styles.cardDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }]} />
+        <View style={styles.commentsSection}>
+          {item.comments && item.comments.length > 0 ? (
+            item.comments.map((comment) => (
+              <View key={comment.id} style={styles.commentRow}>
+                <UserAvatar uri={comment.user.avatar} username={comment.user.username} size="sm" />
+                <View style={[styles.commentBubble, { backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', borderColor: colors.borderSubtle }]}>
+                  <Text variant="micro" weight="bold" color={colors.primary}>
+                    @{comment.user.username}
+                  </Text>
+                  <Text variant="caption" color={colors.text} style={{ marginTop: 1 }}>
+                    {comment.content}
+                  </Text>
+                </View>
+              </View>
+            ))
+          ) : null}
+
+          {/* Comment Input */}
+          <View style={styles.commentInputRow}>
+            <View style={[styles.commentInputWrapper, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)', borderColor: colors.borderSubtle }]}>
+              <TextInput
+                placeholder="Write a supportive comment..."
+                placeholderTextColor={colors.textTertiary}
+                value={commentContent}
+                onChangeText={setCommentContent}
+                style={[styles.commentInput, { color: colors.text }]}
+              />
+            </View>
+            <Pressable
+              onPress={handlePostCommentLocal}
+              disabled={submitting}
+              style={[styles.commentSendBtn, { backgroundColor: colors.primary }]}
+            >
+              {submitting ? (
+                <ActivityIndicator size="small" color={colors.surface} />
+              ) : (
+                <Send size={12} color={colors.surface} />
+              )}
+            </Pressable>
+          </View>
+        </View>
+      </GlassCard>
+    </View>
+  );
+});
+
 export default function SocialFeedScreen() {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
@@ -99,8 +291,6 @@ export default function SocialFeedScreen() {
   const [socialFeed, setSocialFeed] = useState<FeedItem[]>([]);
   const [loadingFeed, setLoadingFeed] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
-  const [submittingComment, setSubmittingComment] = useState<Record<string, boolean>>({});
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searching, setSearching] = useState(false);
@@ -125,12 +315,12 @@ export default function SocialFeedScreen() {
     }));
   };
 
-  const removeFloatingReaction = (itemId: string, id: string) => {
+  const removeFloatingReaction = useCallback((itemId: string, id: string) => {
     setFloatingPool((prev) => ({
       ...prev,
       [itemId]: (prev[itemId] || []).filter((r) => r.id !== id),
     }));
-  };
+  }, []);
 
   const fetchSocialConnections = async () => {
     try {
@@ -256,7 +446,7 @@ export default function SocialFeedScreen() {
     }
   };
 
-  const handleSendReaction = async (targetUserId: string, itemId: string, emoji: string) => {
+  const handleSendReaction = useCallback(async (targetUserId: string, itemId: string, emoji: string) => {
     try {
       triggerFloatingReaction(itemId, emoji);
       await api.post('/social/react', {
@@ -264,8 +454,8 @@ export default function SocialFeedScreen() {
         emoji,
       });
       
-      setSocialFeed(
-        socialFeed.map((item) => {
+      setSocialFeed(prevFeed =>
+        prevFeed.map((item) => {
           if (item.user.id === targetUserId) {
             const filteredReactions = (item.reactions || []).filter(
               (r) => r.username !== user?.username
@@ -281,38 +471,21 @@ export default function SocialFeedScreen() {
     } catch (e) {
       console.warn('Failed to send reaction:', e);
     }
-  };
+  }, [user?.username]);
 
-  const handlePostComment = async (userChallengeId: string) => {
-    const content = commentInputs[userChallengeId];
-    if (!content || !content.trim()) return;
-
-    try {
-      setSubmittingComment(prev => ({ ...prev, [userChallengeId]: true }));
-      const resComment = await api.post('/social/comment', {
-        userChallengeId,
-        content: content.trim(),
-      });
-
-      setSocialFeed(
-        socialFeed.map((item) => {
-          if (item.id === userChallengeId) {
-            return {
-              ...item,
-              comments: [...(item.comments || []), resComment.data],
-            };
-          }
-          return item;
-        })
-      );
-
-      setCommentInputs(prev => ({ ...prev, [userChallengeId]: '' }));
-    } catch (e) {
-      console.warn('Failed to post comment:', e);
-    } finally {
-      setSubmittingComment(prev => ({ ...prev, [userChallengeId]: false }));
-    }
-  };
+  const onCommentPosted = useCallback((itemId: string, newComment: FeedComment) => {
+    setSocialFeed(prevFeed =>
+      prevFeed.map((item) => {
+        if (item.id === itemId) {
+          return {
+            ...item,
+            comments: [...(item.comments || []), newComment],
+          };
+        }
+        return item;
+      })
+    );
+  }, []);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
@@ -342,161 +515,6 @@ export default function SocialFeedScreen() {
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery]);
-
-  // Feed Card Component (Static and performant, without entry spring animations)
-  const FeedCard = ({ item }: { item: FeedItem }) => {
-    const isHighStreakWin = item.user.streak > 0 && item.user.streak % 5 === 0;
-
-    return (
-      <View>
-        <GlassCard
-          borderRadius="2xl"
-          intensity="high"
-          style={[
-            styles.feedCard,
-            {
-              borderColor: isHighStreakWin ? 'rgba(138, 35, 135, 0.35)' : 'rgba(255, 255, 255, 0.06)',
-            }
-          ]}
-        >
-          {/* Milestone Purple Overlay for high streaks */}
-          {isHighStreakWin && (
-            <LinearGradient
-              colors={['rgba(138, 35, 135, 0.05)', 'transparent']}
-              style={[StyleSheet.absoluteFill, { borderRadius: radius.xl }]}
-            />
-          )}
-
-          {/* Active Floating Reactions Render */}
-          {(floatingPool[item.id] || []).map((react) => (
-            <FloatingEmoji
-              key={react.id}
-              emoji={react.emoji}
-              onComplete={() => removeFloatingReaction(item.id, react.id)}
-            />
-          ))}
-
-          {/* Header */}
-          <View style={styles.cardHeader}>
-            <View style={styles.userInfo}>
-              <UserAvatar uri={item.user.avatar} username={item.user.username} size="sm" borderRankColor={isHighStreakWin ? colors.accent : colors.primary} />
-              <View>
-                <View style={styles.userTitleRow}>
-                  <Text variant="bodySmall" weight="bold" color={colors.text}>
-                    @{item.user.username}
-                  </Text>
-                  {isHighStreakWin && (
-                    <View style={[styles.milestoneBadge, { backgroundColor: colors.accent + '20' }]}>
-                      <Sparkles size={8} color={colors.accent} />
-                      <Text variant="micro" weight="bold" color={colors.accent}>FIRE WIN</Text>
-                    </View>
-                  )}
-                </View>
-                <Text variant="micro" color={colors.textTertiary}>
-                  Level {item.user.level || 1} • {item.user.streak || 0}🔥 Streak
-                </Text>
-              </View>
-            </View>
-            <View style={[styles.categoryBadge, { backgroundColor: isHighStreakWin ? colors.accent + '15' : colors.primary + '15' }]}>
-              <Text variant="micro" weight="bold" color={isHighStreakWin ? colors.accent : colors.primary}>
-                {item.challenge.category.toUpperCase()}
-              </Text>
-            </View>
-          </View>
-
-          {/* Quest complete detail */}
-          <Surface elevation="flat" borderRadius="lg" bordered style={[styles.completionBox, { backgroundColor: colors.surface }]}>
-            <Text variant="bodySmall" weight="bold" color={colors.text}>
-              Completed: {item.challenge.title}
-            </Text>
-            <Text variant="caption" color={colors.textSecondary} style={{ marginTop: 2, lineHeight: 18 }}>
-              {item.challenge.description}
-            </Text>
-          </Surface>
-
-          {/* Reactions Shelf */}
-          {item.reactions && item.reactions.length > 0 && (
-            <View style={styles.reactionsShelf}>
-              {item.reactions.slice(0, 4).map((react, rIdx) => (
-                <View key={rIdx} style={[styles.reactionPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)', borderColor: colors.borderSubtle }]}>
-                  <Text style={[styles.reactionText, { color: colors.textSecondary }]}>
-                    {react.emoji} <Text style={{ fontSize: 9 }}>@{react.username}</Text>
-                  </Text>
-                </View>
-              ))}
-            </View>
-          )}
-
-          <View style={[styles.cardDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }]} />
-
-          {/* Action emoji row */}
-          <View style={styles.actionRow}>
-            <View style={styles.reactionButtons}>
-              {['🔥', '👏', '💪', '👑'].map((emoji) => (
-                <Pressable
-                  key={emoji}
-                  onPress={() => handleSendReaction(item.user.id, item.id, emoji)}
-                  style={({ pressed }) => [
-                    styles.emojiButton,
-                    {
-                      backgroundColor: pressed ? 'rgba(255, 75, 43, 0.08)' : isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                      borderColor: colors.borderSubtle,
-                    }
-                  ]}
-                >
-                  <Text style={{ fontSize: 13 }}>{emoji}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-
-          {/* Comment Threads Section */}
-          <View style={[styles.cardDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }]} />
-          <View style={styles.commentsSection}>
-            {item.comments && item.comments.length > 0 ? (
-              item.comments.map((comment) => (
-                <View key={comment.id} style={styles.commentRow}>
-                  <UserAvatar uri={comment.user.avatar} username={comment.user.username} size="sm" />
-                  <View style={[styles.commentBubble, { backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', borderColor: colors.borderSubtle }]}>
-                    <Text variant="micro" weight="bold" color={colors.primary}>
-                      @{comment.user.username}
-                    </Text>
-                    <Text variant="caption" color={colors.text} style={{ marginTop: 1 }}>
-                      {comment.content}
-                    </Text>
-                  </View>
-                </View>
-              ))
-            ) : null}
-
-            {/* Comment Input */}
-            <View style={styles.commentInputRow}>
-              <View style={[styles.commentInputWrapper, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)', borderColor: colors.borderSubtle }]}>
-                <TextInput
-                  placeholder="Write a supportive comment..."
-                  placeholderTextColor={colors.textTertiary}
-                  value={commentInputs[item.id] || ''}
-                  onChangeText={(txt) => setCommentInputs(prev => ({ ...prev, [item.id]: txt }))}
-                  style={[styles.commentInput, { color: colors.text }]}
-                />
-              </View>
-              <Pressable
-                onPress={() => handlePostComment(item.id)}
-                disabled={submittingComment[item.id]}
-                style={[styles.commentSendBtn, { backgroundColor: colors.primary }]}
-              >
-                {submittingComment[item.id] ? (
-                  <ActivityIndicator size="small" color={colors.surface} />
-                ) : (
-                  <Send size={12} color={colors.surface} />
-                )}
-              </Pressable>
-            </View>
-          </View>
-        </GlassCard>
-      </View>
-    );
-  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -643,7 +661,14 @@ export default function SocialFeedScreen() {
             </GlassCard>
           ) : (
             socialFeed.map((item) => (
-              <FeedCard key={item.id} item={item} />
+              <FeedCard
+                key={item.id}
+                item={item}
+                floatingEmojis={floatingPool[item.id] || []}
+                removeFloatingReaction={removeFloatingReaction}
+                handleSendReaction={handleSendReaction}
+                onCommentPosted={onCommentPosted}
+              />
             ))
           )}
           <Spacer size="5xl" />
