@@ -168,7 +168,7 @@ export default function HomeScreen() {
         </View>
       ),
       primaryAction: {
-        text: 'VERIFY & COMPLETE',
+        text: 'COMPLETE',
         variant: 'primary',
         onPress: async () => {
           await handleCompleteChallenge(challengeId, localProof);

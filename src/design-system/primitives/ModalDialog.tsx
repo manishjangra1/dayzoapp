@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Modal,
   StyleSheet,
   Pressable,
   View,
@@ -62,25 +61,18 @@ export const ModalDialog: React.FC<ModalDialogProps> = ({
   const dialogScale = useSharedValue(0.9);
   const dialogTranslateY = useSharedValue(40);
 
-  // Synchronize internal render state and trigger animations
+  // Synchronize internal render state instantly without animations
   useEffect(() => {
     if (visible) {
       setRendered(true);
-      // Fade in backdrop
-      backdropOpacity.value = withTiming(1, { duration: 100 });
-      // Spring animate dialog container
-      dialogScale.value = withSpring(1, { damping: 18, stiffness: 280, mass: 0.4 });
-      dialogTranslateY.value = withSpring(0, { damping: 18, stiffness: 280, mass: 0.4 });
+      backdropOpacity.value = 1;
+      dialogScale.value = 1;
+      dialogTranslateY.value = 0;
     } else {
-      // Fade out backdrop
-      backdropOpacity.value = withTiming(0, { duration: 80 });
-      // Slide down and scale down dialog
-      dialogScale.value = withTiming(0.97, { duration: 80 });
-      dialogTranslateY.value = withTiming(8, { duration: 80 }, (finished) => {
-        if (finished) {
-          runOnJS(setRendered)(false);
-        }
-      });
+      backdropOpacity.value = 0;
+      dialogScale.value = 0.97;
+      dialogTranslateY.value = 8;
+      setRendered(false);
     }
   }, [visible]);
 
@@ -111,12 +103,7 @@ export const ModalDialog: React.FC<ModalDialogProps> = ({
   }
 
   return (
-    <Modal
-      transparent
-      visible={true}
-      animationType="none"
-      onRequestClose={onClose}
-    >
+    <View style={styles.absoluteContainer}>
       <View style={styles.overlayContainer}>
         {/* Animated semi-transparent backdrop */}
         <Animated.View
@@ -204,11 +191,15 @@ export const ModalDialog: React.FC<ModalDialogProps> = ({
           </Surface>
         </Animated.View>
       </View>
-    </Modal>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  absoluteContainer: {
+    ...StyleSheet.absoluteFill,
+    zIndex: 9999,
+  },
   overlayContainer: {
     flex: 1,
     justifyContent: 'center',

@@ -31,12 +31,9 @@ export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const hide = useCallback(() => {
     setVisible(false);
-    // Reset loading states after close animation has a chance to play
-    setTimeout(() => {
-      setPrimaryLoading(false);
-      setSecondaryLoading(false);
-      setConfig(null);
-    }, 100);
+    setPrimaryLoading(false);
+    setSecondaryLoading(false);
+    setConfig(null);
   }, []);
 
   const show = useCallback((newConfig: DialogConfig) => {

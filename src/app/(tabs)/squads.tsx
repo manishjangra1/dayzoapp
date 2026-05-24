@@ -182,9 +182,9 @@ export default function SquadsScreen() {
     });
   };
 
-  const copyToClipboard = async () => {
+  const copyToClipboard = () => {
     if (mySquad?.inviteCode) {
-      await Clipboard.setStringAsync(mySquad.inviteCode);
+      Clipboard.setStringAsync(mySquad.inviteCode);
       dialog.show({
         title: 'Copied',
         message: 'Invite code copied to clipboard!',
