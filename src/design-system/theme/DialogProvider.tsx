@@ -36,7 +36,7 @@ export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setPrimaryLoading(false);
       setSecondaryLoading(false);
       setConfig(null);
-    }, 300);
+    }, 100);
   }, []);
 
   const show = useCallback((newConfig: DialogConfig) => {

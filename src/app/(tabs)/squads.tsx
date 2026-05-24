@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, ScrollView, TextInput, Clipboard, ActivityIndicator, Pressable, RefreshControl } from 'react-native';
+import { StyleSheet, View, ScrollView, TextInput, ActivityIndicator, Pressable, RefreshControl } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { Award, Users, Zap, Copy, Target } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../services/api';
@@ -181,9 +182,9 @@ export default function SquadsScreen() {
     });
   };
 
-  const copyToClipboard = () => {
+  const copyToClipboard = async () => {
     if (mySquad?.inviteCode) {
-      Clipboard.setString(mySquad.inviteCode);
+      await Clipboard.setStringAsync(mySquad.inviteCode);
       dialog.show({
         title: 'Copied',
         message: 'Invite code copied to clipboard!',

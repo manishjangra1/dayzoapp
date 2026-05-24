@@ -109,7 +109,7 @@ export const DailyChallengesCard: React.FC<DailyChallengesCardProps> = ({
             DAILY FUEL HUB
           </Text>
           <Text variant="bodySmall" weight="bold" color={colors.textSecondary}>
-            {completedCount} OF {challenges.length} SECURED
+            {completedCount} OF {challenges.length} COMPLETED
           </Text>
         </View>
         <Zap size={18} color={colors.primary} fill={colors.primary} />

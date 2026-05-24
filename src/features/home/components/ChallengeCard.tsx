@@ -129,7 +129,7 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({
           <View style={[styles.questBadge, { backgroundColor: completed ? 'rgba(52, 211, 153, 0.15)' : `${catTheme.color}20` }]}>
             <Compass size={12} color={completed ? colors.success : catTheme.color} />
             <Text variant="micro" weight="bold" color={completed ? colors.success : catTheme.color} style={styles.badgeText}>
-              {completed ? 'QUEST SECURED' : catTheme.label}
+              {completed ? 'CHALLENGE COMPLETED' : catTheme.label}
             </Text>
           </View>
           
@@ -186,7 +186,7 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({
             ))}
           </View>
           <Text variant="micro" color={colors.textSecondary} style={[styles.socialText, { marginLeft: (companionInitials.length - 1) * -8 + 8 }]}>
-            🔥 {totalCompletions} companions secured this quest today!
+            🔥 {totalCompletions} companions completed this challenge today!
           </Text>
         </View>
 

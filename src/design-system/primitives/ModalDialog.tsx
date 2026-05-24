@@ -67,16 +67,16 @@ export const ModalDialog: React.FC<ModalDialogProps> = ({
     if (visible) {
       setRendered(true);
       // Fade in backdrop
-      backdropOpacity.value = withTiming(1, { duration: 250 });
+      backdropOpacity.value = withTiming(1, { duration: 100 });
       // Spring animate dialog container
-      dialogScale.value = withSpring(1, animations.spring.gentle);
-      dialogTranslateY.value = withSpring(0, animations.spring.gentle);
+      dialogScale.value = withSpring(1, { damping: 18, stiffness: 280, mass: 0.4 });
+      dialogTranslateY.value = withSpring(0, { damping: 18, stiffness: 280, mass: 0.4 });
     } else {
       // Fade out backdrop
-      backdropOpacity.value = withTiming(0, { duration: 200 });
+      backdropOpacity.value = withTiming(0, { duration: 80 });
       // Slide down and scale down dialog
-      dialogScale.value = withTiming(0.92, { duration: 200 });
-      dialogTranslateY.value = withTiming(25, { duration: 200 }, (finished) => {
+      dialogScale.value = withTiming(0.97, { duration: 80 });
+      dialogTranslateY.value = withTiming(8, { duration: 80 }, (finished) => {
         if (finished) {
           runOnJS(setRendered)(false);
         }
